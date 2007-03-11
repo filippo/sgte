@@ -76,9 +76,9 @@
 %%%-------------------------------------------------------------------
 -module(sgte).
 
--author("$Author: filippo $").
--version("$Revision: 1.22 $").
--date("$Date: 2007/03/10 18:15:08 $").
+-author("$Author$").
+-version("$Rev$").
+-date("$Date$").
 
 %% API
 -export([compile/1, compile_file/1, render/2]).
