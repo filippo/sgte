@@ -1,4 +1,4 @@
--module(sgte_yaws_tei_test).
+-module(yaws_tei_test).
 
 -export([setup_test/0]).
 
@@ -203,7 +203,7 @@ test_fun() ->
 %test on a non existent file
 test_file() ->
     yaws_tei:register_file("myfile.tmpl", sgte),
-    {ok, F} = yaws_tei:lookup(tmpl_fun),
+    {ok, _F} = yaws_tei:lookup(tmpl_fun),
     Res = sgte:compile_file("myfile.tmpl"),
     sgeunit:assert_equal(Res, {error, enoent}).
 
