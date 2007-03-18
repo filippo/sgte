@@ -537,8 +537,15 @@ cons_when([], _P, Res) ->
 cons_when([H|Rest], P, Res) ->
     case P(H) of
 	true ->
-	    H1 = [H|hd(Rest)],
-	    cons_when(list:nthtail(1, Rest), P, [H1|Res]);
+	    case length(Rest) > 0 of
+		true ->
+		    [HR|Tail] = Rest,
+		    H1 = lists:sublist(H, length(H)-1) ++ "," ++ HR,
+		    cons_when(Tail, P, [H1|Res]);
+		_ ->
+		    H1 = lists:sublist(H, length(H)-1) ++ ",",
+		    cons_when(Rest, P, [H1|Res])
+	    end;
 	_ ->
 	    cons_when(Rest, P, [H|Res])
     end.
