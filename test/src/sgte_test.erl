@@ -3,11 +3,13 @@
 -export([test_compile_attr/0, test_compile_include/0, test_compile_apply/0]).
 -export([test_compile_map/0, test_compile_inline_map/0, test_compile_mmap/0]).
 -export([test_compile_if/0]).
+-export([test_compile_imap_js/0, test_compile_imap_comma/0]).
 
 -export([test_string/0, test_string_err/0, test_include/0, test_apply/0]).
 -export([test_simpleif/0, test_fif/0, test_fif2/0, test_nested_fif/0, test_if/0]).
 -export([test_map/0, test_map_on_empty_list/0, test_mmap/0]).
 -export([test_imap/0,test_imap2/0, test_imap_name_place/0, test_fun/0]).
+-export([test_imap_js/0, test_imap_comma/0]).
 -export([test_file/0]).
 
 
@@ -50,6 +52,19 @@ test_compile_inline_map() ->
 test_compile_if() ->
     {ok, C} = sgte:compile(simple_if()),
     Result = "Start " ++ [{ift, {{attribute, test}, "then branch", "else branch"}}],
+    sgeunit:assert_equal(C, Result).
+
+test_compile_imap_js() ->
+    {ok, C} = sgte:compile(imap_js()),
+    Result = [{imap, ["\"#" ++ [{attribute, owner}] ++
+		      "\": function(t) {alert(\"Trigger was \"+t.id+\"\nAction was "
+		      ++ [{attribute, owner}] ++ "\");},"], owners}],
+    sgeunit:assert_equal(C, Result).
+
+test_compile_imap_comma() ->
+    {ok, C} = sgte:compile(imap_comma()),
+    Result = [{imap, [[{attribute, attr}] ++
+		      ", "], attrList}],
     sgeunit:assert_equal(C, Result).
 
 %%
@@ -204,6 +219,27 @@ test_imap2() ->
 	"</ul>",
     sgeunit:assert_equal(Res, Rendered).
 
+test_imap_js() ->
+    {ok, C} = sgte:compile(imap_js()),
+    Rendered = sgte:render(C, [{owners, 
+				   [{owner, "tobbe"}, 
+				    {owner, "magnus"}
+				   ]}]
+			     ),
+    Result = "\"#tobbe\": function(t) {alert(\"Trigger was \"+t.id+\"\nAction was tobbe\");},"++
+	"\"#magnus\": function(t) {alert(\"Trigger was \"+t.id+\"\nAction was magnus\");},",
+    sgeunit:assert_equal(Rendered, Result).
+
+test_imap_comma() ->
+    {ok, C} = sgte:compile(imap_comma()),
+    Rendered = sgte:render(C, [{attrList, 
+				   [{attr, "First Attribute"}, 
+				    {attr, "and the Second"}
+				   ]}]
+			     ),
+    Result = "First Attribute, and the Second, ",
+    sgeunit:assert_equal(Rendered, Result).
+
 % test callable attribute
 test_fun() ->
     MyF = fun(Data) ->
@@ -282,6 +318,13 @@ print_inline_mountain_place() ->
 
 tmpl_fun() ->
     "aaaa $callme$ bbb".
+
+
+imap_js() ->
+    "$map:{\"#$owner$\": function(t) {alert(\"Trigger was \"+t.id+\"\nAction was $owner$\");}\\,} owners$".
+
+imap_comma() ->
+    "$map:{$attr$\\, } attrList$".
 
 %% Test Data
 data() ->
