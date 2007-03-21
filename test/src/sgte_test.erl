@@ -57,14 +57,13 @@ test_compile_if() ->
 test_compile_imap_js() ->
     {ok, C} = sgte:compile(imap_js()),
     Result = [{imap, ["\"#" ++ [{attribute, owner}] ++
-		      "\": function(t) {alert(\"Trigger was \"+t.id+\"\nAction was "
-		      ++ [{attribute, owner}] ++ "\");},"], owners}],
+		      "\": function(t) {save_owner(\""++[{attribute, owner}]++"\",", "t.id);},"], owners}],
     sgeunit:assert_equal(C, Result).
 
 test_compile_imap_comma() ->
     {ok, C} = sgte:compile(imap_comma()),
     Result = [{imap, [[{attribute, attr}] ++
-		      ", "], attrList}],
+		      ", aaa,"], attrList}],
     sgeunit:assert_equal(C, Result).
 
 %%
@@ -226,8 +225,8 @@ test_imap_js() ->
 				    {owner, "magnus"}
 				   ]}]
 			     ),
-    Result = "\"#tobbe\": function(t) {alert(\"Trigger was \"+t.id+\"\nAction was tobbe\");},"++
-	"\"#magnus\": function(t) {alert(\"Trigger was \"+t.id+\"\nAction was magnus\");},",
+    Result = "\"#tobbe\": function(t) {save_owner(\"tobbe\",t.id);}, "++
+	"\"#magnus\": function(t) {save_owner(\"magnus\",t.id);}, ",
     sgeunit:assert_equal(Rendered, Result).
 
 test_imap_comma() ->
@@ -237,7 +236,7 @@ test_imap_comma() ->
 				    {attr, "and the Second"}
 				   ]}]
 			     ),
-    Result = "First Attribute, and the Second, ",
+    Result = "First Attribute, aaa,and the Second, aaa,",
     sgeunit:assert_equal(Rendered, Result).
 
 % test callable attribute
@@ -321,10 +320,10 @@ tmpl_fun() ->
 
 
 imap_js() ->
-    "$map:{\"#$owner$\": function(t) {alert(\"Trigger was \"+t.id+\"\nAction was $owner$\");}\\,} owners$".
+    "$map:{\"#$owner$\": function(t) {save_owner(\"$owner$\",t.id);}, } owners$".
 
 imap_comma() ->
-    "$map:{$attr$\\, } attrList$".
+    "$map:{$attr$, aaa,} attrList$".
 
 %% Test Data
 data() ->

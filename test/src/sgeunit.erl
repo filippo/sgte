@@ -146,11 +146,17 @@ run_tests(_, [], ResultList, _Verbose) ->
 run_tests(Module, [H|T], ResultList, Verbose) ->
     FName = element(1, H),
     %%io:format("~p:~p~n", [Module, FName]),
-    case lists:sublist(atom_to_list(FName), 5) of
+    Next = case lists:sublist(atom_to_list(FName), 5) of
         "test_" ->
-	    Next = report_result(Module, FName, Module:FName(), Verbose);
+	    try
+	       report_result(Module, FName, Module:FName(), Verbose)
+	    catch
+		Err:Reason -> 
+		    F = report_closure(Module, FName, Verbose),
+		    F({error, {Err, Reason}})
+	    end;
 	_ ->
-            Next = ok
+            ok
     end,
     run_tests(Module, T, [Next|ResultList], Verbose).
 
