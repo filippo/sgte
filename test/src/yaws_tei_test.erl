@@ -1,15 +1,11 @@
--module(sgte_test).
+-module(yaws_tei_test).
 
--export([test_compile_attr/0, test_compile_include/0, test_compile_apply/0]).
--export([test_compile_map/0, test_compile_inline_map/0, test_compile_mmap/0]).
--export([test_compile_if/0]).
--export([test_compile_imap_js/0, test_compile_imap_comma/0]).
+-export([setup_test/0]).
 
 -export([test_string/0, test_string_err/0, test_include/0, test_apply/0]).
 -export([test_simpleif/0, test_fif/0, test_fif2/0, test_nested_fif/0, test_if/0]).
 -export([test_map/0, test_map_on_empty_list/0, test_mmap/0]).
 -export([test_imap/0,test_imap2/0, test_imap_name_place/0, test_fun/0]).
--export([test_imap_js/0, test_imap_comma/0]).
 -export([test_file/0]).
 
 
@@ -18,53 +14,8 @@
 %% Tests
 %%
 %%--------------------
-%%
-%% Compile Test
-%%
-test_compile_attr() ->
-    Str = "foo $bar$ baz",
-    {ok, Compiled} = sgte:compile(Str),
-    sgeunit:assert_equal(Compiled, "foo " ++ [{attribute, bar}] ++ " baz").
-
-test_compile_include() ->
-    {ok, C} = sgte:compile("foo $include tmpl$ baz"),
-    sgeunit:assert_equal(C, "foo " ++ [{include, tmpl}] ++ " baz").
-
-test_compile_apply() ->
-    {ok, C} = sgte:compile("foo $apply bar myVar$ baz"),
-    sgeunit:assert_equal(C, "foo " ++ [{apply, bar, myVar}] ++ " baz").
-
-test_compile_map() ->
-    {ok, C} = sgte:compile("foo $map bar varList$ baz"),
-    sgeunit:assert_equal(C, "foo " ++ [{map, [bar], varList}] ++ " baz").
-
-test_compile_mmap() ->
-    {ok, C} = sgte:compile("foo $map bar baz varList$"),
-    sgeunit:assert_equal(C, "foo " ++ [{map, [bar, baz], varList}]).
-
-test_compile_inline_map() ->
-    {ok, C} = sgte:compile("foo $map:{text $var$ other text} varList$ baz"),
-    Result = "foo " ++ 
-	      [{imap, ["text " ++ [{attribute, var}] ++ " other text"], varList}] ++ 
-	      " baz",
-    sgeunit:assert_equal(C, Result).
-
-test_compile_if() ->
-    {ok, C} = sgte:compile(simple_if()),
-    Result = "Start " ++ [{ift, {{attribute, test}, "then branch", "else branch"}}],
-    sgeunit:assert_equal(C, Result).
-
-test_compile_imap_js() ->
-    {ok, C} = sgte:compile(imap_js()),
-    Result = [{imap, ["\"#" ++ [{attribute, owner}] ++
-		      "\": function(t) {save_owner(\""++[{attribute, owner}]++"\",", "t.id);},"], owners}],
-    sgeunit:assert_equal(C, Result).
-
-test_compile_imap_comma() ->
-    {ok, C} = sgte:compile(imap_comma()),
-    Result = [{imap, [[{attribute, attr}] ++
-		      ", "], attrList}],
-    sgeunit:assert_equal(C, Result).
+setup_test() ->
+    yaws_tei:start_link().
 
 %%
 %% Render Test
@@ -72,8 +23,9 @@ test_compile_imap_comma() ->
 test_string() ->
     Str = "This is a test:\n" ++
 	"$testFun()$ followed by $testData$ and unicode characters  àèìòù",
-    {ok, Compiled} = sgte:compile(Str),
-    Res = sgte:render(Compiled, data()),
+    yaws_tei:register_template(test_str, Str, sgte),
+    {ok, F} = yaws_tei:lookup(test_str),
+    Res = F(data()),
     ResultStr = "This is a test:\n" ++
 	"foo, bar, baz followed by my test data with unicode characters: àèìòù and unicode characters  àèìòù",
     sgeunit:assert_equal(Res, ResultStr).
@@ -81,99 +33,115 @@ test_string() ->
 test_string_err() ->
     Str = "This is a test:\n" ++
 	"$testFun()$ followed by $testData$ and unicode chars àèìòù",
-    {ok, Compiled} = sgte:compile(Str),
-    Res = sgte:render(Compiled, []),
+    yaws_tei:register_template(test_str, Str, sgte),
+    {ok, F} = yaws_tei:lookup(test_str),
+    Res = F([]),
     ResultStr = "This is a test:\n" ++
 	"[SGTE Error: template: attribute - key 'testFun()' not found] followed by [SGTE Error: template: attribute - key testData not found] and unicode chars àèìòù",
     sgeunit:assert_equal(Res, ResultStr).
 
 test_include() ->
-    {ok, C1} = sgte:compile("bar"),
-    {ok, C2} = sgte:compile("foo $include tmpl$ baz"),
-    Res = sgte:render(C2, [{tmpl, C1}]),
+    yaws_tei:register_template(bar, "bar", sgte),
+    yaws_tei:register_template(foo, "foo $include tmpl$ baz", sgte),
+    {ok, Included} = yaws_tei:lookup(bar),
+    {ok, Foo} = yaws_tei:lookup(foo),
+    Res = Foo([{tmpl, Included}]),
     ResultStr = "foo bar baz",
     sgeunit:assert_equal(Res, ResultStr).
 
 test_apply() ->
     F = fun(L) -> lists:nth(2, L) end,
-    {ok, C} = sgte:compile("foo $apply second myList$ baz"),
-    Res = sgte:render(C, [{second, F}, {myList, ["1", "2", "3"]}]),
+    yaws_tei:register_template(foo, "foo $apply second myList$ baz", sgte),
+    {ok, R} = yaws_tei:lookup(foo),
+    Res = R([{second, F}, {myList, ["1", "2", "3"]}]),
     ResultStr = "foo 2 baz",
     sgeunit:assert_equal(Res, ResultStr).
 
 test_simpleif() ->
-    {ok, C} = sgte:compile(simple_if()),
+    yaws_tei:register_template(simple_if, simple_if(), sgte),
+    {ok, F} = yaws_tei:lookup(simple_if),
     DThen = [{test, true}],
     DElse = [{test, false}],
-    RThen = sgte:render(C, DThen),
-    RElse = sgte:render(C, DElse),
+    RThen = F(DThen),
+    RElse = F(DElse),
     [sgeunit:assert_equal(RThen, "Start then branch"),
      sgeunit:assert_equal(RElse, "Start else branch")].
 
 test_if() ->
-    {ok, Compiled} = sgte:compile(if_string()),
+    yaws_tei:register_template(if_str, if_string(), sgte),
+    {ok, R} = yaws_tei:lookup(if_str),
     NameL = mountainList(),
     Data1 = [{testNames, true},
 	    {nameList, NameL}],
     Data2 = [{testNames, false},
 	    {noName, fun no_name/1}],
-    Res1 = sgte:render(Compiled, Data1),
-    Res2 = sgte:render(Compiled, Data2),
+    Res1 = R(Data1),
+    Res2 = R(Data2),
     [sgeunit:assert_equal(Res1, "Hello! Some Mountains: Monte Bianco, Cerro Torre, Mt. Everest, Catinaccio Bye Bye."),
      sgeunit:assert_equal(Res2, "Hello! No Name Found Bye Bye.")].    
     
 test_fif() ->
-    {ok, Compiled} = sgte:compile(if_string()),
+    yaws_tei:register_template(if_str, if_string(), sgte),
+    {ok, R} = yaws_tei:lookup(if_str),
     NameL = mountainList(),
     Data = [{testNames, check_names(NameL)},
 	    {noName, fun no_name/1},
 	    {nameList, NameL}],
-    Res = sgte:render(Compiled, Data),
+    Res = R(Data),
     sgeunit:assert_equal(Res, "Hello! Some Mountains: Monte Bianco, Cerro Torre, Mt. Everest, Catinaccio Bye Bye.").
 
 test_fif2() ->
-    {ok, Compiled} = sgte:compile(if_string()),
+    yaws_tei:register_template(if_str, if_string(), sgte),
+    {ok, R} = yaws_tei:lookup(if_str),
     D1 = dict:new(),
     D2 = dict:store('testNames', check_names([]), D1),
     D3 = dict:store('noName', fun no_name/1, D2),
     D4 = dict:store('nameList', mountainList(), D3),
-    Res = sgte:render(Compiled, D4),
+    Res = R(D4),
     sgeunit:assert_equal(Res, "Hello! No Name Found Bye Bye.").
 
 test_nested_fif() ->
-    {ok, Compiled} = sgte:compile(nested_if_string()),
+    yaws_tei:register_template(nested_if, nested_if_string(), sgte),
+    {ok, R} = yaws_tei:lookup(nested_if),
     NameL = mountainList(),
     D1 = dict:new(),
     D2 = dict:store('testNames', check_names(NameL), D1),
     D3 = dict:store('noName', fun no_name/1, D2),
     D4 = dict:store('nameList', NameL, D3),
-    Res = sgte:render(Compiled, D4),
+    Res = R(D4),
     sgeunit:assert_equal(Res, "Some Mountains: Monte Bianco, Cerro Torre, Mt. Everest, Catinaccio").
 
 test_map() ->
-    {ok, PrintM} = sgte:compile(print_mountain()),
-    {ok, PrintMList} = sgte:compile(print_mountains()),
-    Data = [{nameList, mountains()}, {printMountain, PrintM}],
-    Res = sgte:render(PrintMList, Data),
+    yaws_tei:register_template(row, print_mountain(), sgte),
+    yaws_tei:register_template(rowlist, print_mountains(), sgte),
+    {ok, Row} = yaws_tei:lookup(row),
+    {ok, RowList} = yaws_tei:lookup(rowlist),
+    Data = [{nameList, mountains()}, {printMountain, Row}],
+    Res = RowList(Data),
     Rendered = "<ul><li><b>Monte Bianco</b></li><li><b>Cerro Torre</b></li><li><b>Mt. Everest</b></li><li><b>Catinaccio</b></li></ul>",
     sgeunit:assert_equal(Res, Rendered).
 
 test_map_on_empty_list() ->
-    {ok, PrintM} = sgte:compile(print_mountain()),
-    {ok, PrintMList} = sgte:compile(print_mountains()),
+    yaws_tei:register_template(row, print_mountain(), sgte),
+    yaws_tei:register_template(rowlist, print_mountains(), sgte),
+    {ok, PrintM} = yaws_tei:lookup(row),
+    {ok, PrintMList} = yaws_tei:lookup(rowlist),
     Data = [{nameList, empty()}, {printMountain, PrintM}],
-    Res = sgte:render(PrintMList, Data),
+    Res = PrintMList(Data),
     Rendered = "<ul></ul>",
     sgeunit:assert_equal(Res, Rendered).
 
 test_mmap() ->
-    {ok, PrintMList} = sgte:compile(print_mmap()),
-    {ok, R1} = sgte:compile(row1()),
-    {ok, R2} = sgte:compile(row2()),
+    yaws_tei:register_template(row1, row1(), sgte),
+    yaws_tei:register_template(row2, row2(), sgte),
+    yaws_tei:register_template(rowlist, print_mmap(), sgte),
+    {ok, PrintMList} = yaws_tei:lookup(rowlist),
+    {ok, R1} = yaws_tei:lookup(row1),
+    {ok, R2} = yaws_tei:lookup(row2),
     Data = [{nameList, mountains()}, 
 	    {row1, R1}, 
 	    {row2, R2}],
-    Res = sgte:render(PrintMList, Data),
+    Res = PrintMList(Data),
     Rendered = "<ul>"++
 	"<li class=\"riga1\"><b>Monte Bianco</b></li>"++
 	"<li class=\"riga2\"><b>Cerro Torre</b></li>"++
@@ -183,9 +151,10 @@ test_mmap() ->
     sgeunit:assert_equal(Res, Rendered).
 
 test_imap() ->
-    {ok, PrintMList} = sgte:compile(print_inline_mountains()),
+    yaws_tei:register_template(rowlist, print_inline_mountains(), sgte),
+    {ok, PrintMList} = yaws_tei:lookup(rowlist),
     Data = [{nameList, mountains()}, {myClass, "listItem"}],
-    Res = sgte:render(PrintMList, Data),
+    Res = PrintMList(Data),
     Rendered = "<ul>"++
 	"<li class=\"listItem\"><b>Monte Bianco</b></li>"++
 	"<li class=\"listItem\"><b>Cerro Torre</b></li>"++
@@ -195,9 +164,10 @@ test_imap() ->
     sgeunit:assert_equal(Res, Rendered).
 
 test_imap_name_place() ->
-    {ok, PrintMList} = sgte:compile(print_inline_mountain_place()),
+    yaws_tei:register_template(rowlist, print_inline_mountain_place(), sgte),
+    {ok, PrintMList} = yaws_tei:lookup(rowlist),
     Data = [{nameList, mountains2()}],
-    Res = sgte:render(PrintMList, Data),
+    Res = PrintMList(Data),
     Rendered = "<ul>"++
 	"<li><b>Monte Bianco</b> - Alps</li>"++
 	"<li><b>Cerro Torre</b> - Patagonia</li>"++
@@ -207,9 +177,10 @@ test_imap_name_place() ->
     sgeunit:assert_equal(Res, Rendered).
 
 test_imap2() ->
-    {ok, PrintMList} = sgte:compile(print_inline_mountains2()),
+    yaws_tei:register_template(rowlist, print_inline_mountains2(), sgte),
+    {ok, PrintMList} = yaws_tei:lookup(rowlist),
     Data = [{nameList, mountains()}, {myClass, "listItem"},  {myClass2, "listItem2"}],
-    Res = sgte:render(PrintMList, Data),
+    Res = PrintMList(Data),
     Rendered = "<ul>\n"++
 	"<li class=\"listItem\"><b>Monte Bianco</b></li>\n"++
 	"<li class=\"listItem2\"><b>Cerro Torre</b></li>\n"++
@@ -218,39 +189,21 @@ test_imap2() ->
 	"</ul>",
     sgeunit:assert_equal(Res, Rendered).
 
-test_imap_js() ->
-    {ok, C} = sgte:compile(imap_js()),
-    Rendered = sgte:render(C, [{owners, 
-				   [{owner, "tobbe"}, 
-				    {owner, "magnus"}
-				   ]}]
-			     ),
-    Result = "\"#tobbe\": function(t) {save_owner(\"tobbe\",t.id);}, "++
-	"\"#magnus\": function(t) {save_owner(\"magnus\",t.id);}, ",
-    sgeunit:assert_equal(Rendered, Result).
-
-test_imap_comma() ->
-    {ok, C} = sgte:compile(imap_comma()),
-    Rendered = sgte:render(C, [{attrList, 
-				   [{attr, "First Attribute"}, 
-				    {attr, "and the Second"}
-				   ]}]
-			     ),
-    Result = "First Attribute, and the Second, ",
-    sgeunit:assert_equal(Rendered, Result).
-
 % test callable attribute
 test_fun() ->
     MyF = fun(Data) ->
 		  {ok, V} = dict:find(foo, Data),
 		  "TEST: " ++ V
 	  end,
-    {ok, CF} = sgte:compile(tmpl_fun()),
-    Res = sgte:render(CF, [{foo, "foooo"}, {callme, MyF}]),
+    yaws_tei:register_template(tmpl_fun, tmpl_fun(), sgte),
+    {ok, F} = yaws_tei:lookup(tmpl_fun),
+    Res = F([{foo, "foooo"}, {callme, MyF}]),
     sgeunit:assert_equal(Res, "aaaa TEST: foooo bbb").
 
 %test on a non existent file
 test_file() ->
+    yaws_tei:register_file("myfile.tmpl", sgte),
+    {ok, _F} = yaws_tei:lookup(tmpl_fun),
     Res = sgte:compile_file("myfile.tmpl"),
     sgeunit:assert_equal(Res, {error, enoent}).
 
@@ -317,13 +270,6 @@ print_inline_mountain_place() ->
 
 tmpl_fun() ->
     "aaaa $callme$ bbb".
-
-
-imap_js() ->
-    "$map:{\"#$owner$\": function(t) {save_owner(\"$owner$\"\\,t.id);}\\, } owners$".
-
-imap_comma() ->
-    "$map:{$attr$\\, } attrList$".
 
 %% Test Data
 data() ->

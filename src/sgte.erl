@@ -83,7 +83,7 @@
 %% API
 -export([compile/1, compile_file/1, render/2]).
 
--define(SERVER, ?MODULE).
+%%yaws_tei is not in a public release yet -behaviour(yaws_tei).
 
 %%====================================================================
 %% API
@@ -103,6 +103,8 @@
 %% @spec compile(T) -> {ok, Compiled} | {error,Reason}
 %% @end
 %%--------------------------------------------------------------------
+compile(T) when is_binary(T) ->
+    parse(binary_to_list(T));
 compile(T) when is_list(T) ->
     parse(T);
 %%--------------------------------------------------------------------
@@ -122,9 +124,8 @@ compile(T) when is_list(T) ->
 %%--------------------------------------------------------------------
 compile({file, FileName}) ->
     case file:read_file(FileName) of
-	{ok, Binary} ->
-	    Data = binary_to_list(Binary),
-	    compile(Data);
+	{ok, Bin} ->
+	    compile(Bin);
 	Err -> 
 	    Err
     end.
@@ -145,9 +146,8 @@ compile({file, FileName}) ->
 %%--------------------------------------------------------------------
 compile_file(FileName) ->
     case file:read_file(FileName) of
-	{ok, Binary} ->
-	    Data = binary_to_list(Binary),
-	    compile(Data);
+	{ok, Bin} ->
+	    compile(Bin);
 	Err -> 
 	    Err
     end.
@@ -170,12 +170,18 @@ compile_file(FileName) ->
 render(Compiled, Data) when is_list(Data) ->
     Data1 = list_to_dict(Data), %% convert data from list to dict
     render(Compiled, Data1);
+render(Compiled, Data) when is_function(Compiled) ->
+    render_final(Compiled, Data);
 render(Compiled, Data) ->
     lists:flatten([render_element(X, Data) || X <- Compiled]).
 %% used for map Attr is a tuple {attr, Value}
 render(Compiled, Data, Attr) when is_list(Attr) ->
     Data1 = dict:merge(fun(_K, _V1, V2) -> V2 end, Data, dict:from_list(Attr)),
     lists:flatten([render_element(X, Data1) || X <- Compiled]);
+render(Compiled, Data, Attr) when is_function(Compiled) ->
+    {K, V} = Attr,
+    Data1 = dict:store(K, V, Data),
+    render_final(Compiled, Data1);
 render(Compiled, Data, Attr) ->
     {K, V} = Attr,
     Data1 = dict:store(K, V, Data),
@@ -429,6 +435,7 @@ render_element({join, Separator, Term}, Data) ->
 	    Value = string:sub_string(Concat, 1, length(Concat)-length(Separator)),
 	    Value
     end;
+
 render_element({include, Tmpl}, Data) -> %% include template passing all data
     case get_value(Tmpl, Data, include) of
 	{error, X} ->
