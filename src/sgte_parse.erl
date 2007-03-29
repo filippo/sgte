@@ -36,93 +36,107 @@
 %% Description:
 %%--------------------------------------------------------------------
 parse(Template) ->
-    parse(Template, []).
+    parse(Template, [], 1).
 
-parse([], Parsed) ->
+parse([], Parsed, _Line) ->
     {ok, lists:reverse(Parsed)};
-parse("$include "++T, Parsed) ->
-    case parse_el([until(fun is_dollar/1)], T, []) of
+parse("$include "++T, Parsed, Line) ->
+    case parse_rules([until(fun is_dollar/1)], T, []) of
 	{ok, [Token], Rest} ->
-	    parse(Rest, [{include, Token}|Parsed]);
+	    parse(Rest, [{include, {Token}, Line}|Parsed], Line);
 	{error, Reason} -> 
-	    {error, {include, Reason}}
+	    {error, {include, Reason, Line}}
     end;
-parse("$apply "++T, Parsed) ->
-    case parse_el([until(fun is_space/1), until(fun is_dollar/1)], T, []) of
+parse("$apply "++T, Parsed, Line) ->
+    case parse_rules([until(fun is_space/1), until(fun is_dollar/1)], T, []) of
 	{ok, [F, V], Rest} ->
-	    parse(Rest, [{apply, F, V}|Parsed]);
+	    parse(Rest, [{apply, {F, V}, Line}|Parsed], Line);
 	{error, Reason} -> 
-	    {error, {apply, Reason}}
+	    {error, {apply, Reason, Line}}
     end;
-parse("$map "++T, Parsed) ->
-    case parse_el([until(fun is_space/1), until(fun is_dollar/1)], T, []) of
+parse("$map "++T, Parsed, Line) ->
+    case parse_rules([until(fun is_space/1), until(fun is_dollar/1)], T, []) of
 	{ok, [Tmpl, VList], Rest} ->
-	    parse(Rest, [{map, Tmpl, VList}|Parsed]);
+	    parse(Rest, [{map, {Tmpl, VList}, Line}|Parsed], Line);
 	{error, Reason} -> 
-	    {error, {map, Reason}}
+	    {error, {map, Reason, Line}}
     end;
-parse("$mapl "++T, Parsed) ->
-    case parse_el([until(fun is_space/1), until(fun is_dollar/1)], T, []) of
+parse("$mapl "++T, Parsed, Line) ->
+    case parse_rules([until(fun is_space/1), until(fun is_dollar/1)], T, []) of
 	{ok, [Tmpl, VList], Rest} ->
-	    parse(Rest, [{mapl, Tmpl, VList}|Parsed]);
+	    parse(Rest, [{mapl, {Tmpl, VList}, Line}|Parsed], Line);
 	{error, Reason} -> 
-	    {error, {mapl, Reason}}
+	    {error, {mapl, Reason, Line}}
     end;
-parse("$mapj "++T, Parsed) ->
-    case parse_el([until(fun is_space/1), until(fun is_space/1), until(fun is_dollar/1)], T, []) of
+parse("$mapj "++T, Parsed, Line) ->
+    case parse_rules([until(fun is_space/1), until(fun is_space/1), until(fun is_dollar/1)], T, []) of
 	{ok, [Tmpl, VList, Join], Rest} ->
-	    parse(Rest, [{mapj, Tmpl, VList, Join}|Parsed]);
+	    parse(Rest, [{mapj, {Tmpl, VList, Join}, Line}|Parsed], Line);
 	{error, Reason} -> 
-	    {error, {mapj, Reason}}
+	    {error, {mapj, Reason, Line}}
     end;
-parse("$mmap "++T, Parsed) ->
-    case parse_el([until_greedy(fun is_space/1), until(fun is_dollar/1)], T, []) of
+parse("$mmap "++T, Parsed, Line) ->
+    case parse_rules([until_greedy(fun is_space/1), until(fun is_dollar/1)], T, []) of
 	{ok, [TmplL, VList], Rest} ->
-	    parse(Rest, [{mmap, TmplL, VList}|Parsed]);
+	    parse(Rest, [{mmap, {TmplL, VList}, Line}|Parsed], Line);
 	{error, Reason} -> 
-	    {error, {mmap, Reason}}
+	    {error, {mmap, Reason, Line}}
     end;
-parse("$map:"++T, Parsed) ->
+parse("$join "++T, Parsed, Line) ->
     Rules = [parenthesis(fun is_open_bracket/1, fun is_close_bracket/1), 
 	     until(fun is_dollar/1)],
-     case parse_el(Rules, T, []) of
+     case parse_rules(Rules, T, []) of
+ 	{ok, [Separator, VList], Rest} ->
+	     parse(Rest, [{join, {Separator, VList}, Line}|Parsed], Line);
+ 	{error, Reason} -> 
+ 	    {error, {imap, Reason, Line}}
+     end;
+parse("$map:"++T, Parsed, Line) ->
+    Rules = [parenthesis(fun is_open_bracket/1, fun is_close_bracket/1), 
+	     until(fun is_dollar/1)],
+     case parse_rules(Rules, T, []) of
  	{ok, [Inline, VList], Rest} ->
- 	    case parse(Inline, []) of
- 		{error, Reason} ->
- 		    {error, Reason};
+ 	    case parse(Inline) of
+ 		{error, {Tok, Reason, L}} ->
+ 		    {error, {Tok, Reason, Line+L}};
  		{ok, P} ->
- 		    parse(Rest, [{imap, [P], VList}|Parsed])
+		    L = element(size(P), P),
+ 		    parse(Rest, [{imap, {[P], VList}, Line}|Parsed], Line+L)
  	    end;
  	{error, Reason} -> 
- 	    {error, {imap, Reason}}
+ 	    {error, {imap, Reason, Line}}
      end;
-parse([H|T], Parsed) when H == $$ andalso hd(T) == $$ ->
-    parse(tl(T), [H|Parsed]);
-parse([H|T], Parsed) when H == $$ ->
-    case parse_el([until(fun is_dollar/1)], T, []) of
+parse([H|T], Parsed, Line) when H == $$ andalso hd(T) == $$ ->
+    parse(tl(T), [H|Parsed], Line);
+parse([H|T], Parsed, Line) when H == $$ ->
+    case parse_rules([until(fun is_dollar/1)], T, []) of
 	{ok, [Token], Rest} ->
-	    parse(Rest, [{attribute, Token}|Parsed]);
+	    parse(Rest, [{attribute, Token, Line}|Parsed], Line);
 	{error, Reason} -> 
-	    {error, {attribute, Reason}}
+	    {error, {attribute, Reason, Line}}
     end;
-parse([H|T], Parsed) when H == $\\ andalso hd(T) == $$ ->
-    parse(tl(T), [hd(T)|Parsed]);
-parse([H|T], Parsed) ->
+parse([H|T], Parsed, Line) when H == $\\ andalso hd(T) == $$ ->
+    parse(tl(T), [hd(T)|Parsed], Line);
+parse([H|T], Parsed, Line) when [H] == "\r" andalso hd(T) == "\n" ->
+    parse(tl(T), ["\r\n"|Parsed], Line+1);
+parse([H|T], Parsed, Line) when [H] == "\r" orelse [H] == "\n" ->
+    parse(T, [H|Parsed], Line+1);
+parse([H|T], Parsed, Line) ->
     {ok, H1, T1} = simple([H|T], []),
-    parse(T1, [H1|Parsed]).
+    parse(T1, [H1|Parsed], Line).
 
    
 %%====================================================================
 %% Internal functions
 %%====================================================================     
-parse_el([], Tmpl, SoFar) ->
+parse_rules([], Tmpl, SoFar) ->
     {ok, lists:reverse(SoFar), Tmpl};
-parse_el([Rule|T], Tmpl, SoFar) ->
+parse_rules([Rule|T], Tmpl, SoFar) ->
     case Rule(Tmpl) of
 	{error, Reason} ->
 	    {error, Reason};
 	{ok, Tok, Rest} ->
-	    parse_el(T, Rest, [Tok|SoFar])
+	    parse_rules(T, Rest, [Tok|SoFar])
     end.
 
 simple([H|T], []) ->
@@ -231,7 +245,9 @@ is_space(C) ->
     match_char(C, " ").
 is_dollar(C) ->
     match_char(C, "$").
-is_close_bracket(C) ->
-    match_char(C, "}").
 is_open_bracket(C) ->
     match_char(C, "{").
+is_close_bracket(C) ->
+    match_char(C, "}").
+
+
