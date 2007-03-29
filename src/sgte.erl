@@ -22,8 +22,10 @@
 %%% </p><p>
 %%% The use of the Engige is as simple as (from the command line):
 %%% <pre>
-%%% > sgte:start_link(),
-%%% > {ok, Compiled} = sgte:template(Template),
+%%% > {ok, Compiled} = sgte:compile(TmplStr),
+%%% > sgte:render(Compiled, Data).
+%%% or:
+%%% > {ok, Compiled} = sgte:compile_file(FileName),
 %%% > sgte:render(Compiled, Data).
 %%% </pre>
 %%% Where Template can be either a string or a tuple {file, FileName}
@@ -104,9 +106,9 @@
 %% @end
 %%--------------------------------------------------------------------
 compile(T) when is_binary(T) ->
-    parse(binary_to_list(T));
+    sgte_parse:parse(binary_to_list(T));
 compile(T) when is_list(T) ->
-    parse(T);
+    sgte_parse:parse(T);
 %%--------------------------------------------------------------------
 %% @doc Compiles the template file FileName and returns the compiled 
 %% template or an error.
@@ -191,210 +193,6 @@ render(Compiled, Data, Attr) ->
 %%--------------------------------------------------------------------
 %%% Internal functions
 %%--------------------------------------------------------------------
-%%--------------------------------------------------------------------
-%% Function: parse(Template) -> {ok, Parsed} | {error,Reason}
-%% Description: Returns the parsed template.
-%%--------------------------------------------------------------------
-parse(Template) ->
-    case parse(Template, []) of
-	{error, X} ->
-	    {error, X};
-	Parsed ->
-	    {ok, lists:reverse(Parsed)}
-    end.
-parse([], Parsed) ->
-    Parsed;
-parse("$if "++Rest, Parsed) ->
-    P = collect_ift(Rest, [], {}),
-    case P of
-	{error, X} ->
-	    {error, X};
-	{ift, IfToken, Rest1} ->
-	    case parse_token({ift, IfToken}) of
-		{error, E} -> {error, E};
-		ParsedIf -> 
-		    parse(Rest1, [ParsedIf|Parsed])
-	    end
-    end;
-parse([H|Rest], Parsed) when [H] == "$" ->   %% start token: call collect_token to get the complete token.
-    case collect_token(Rest, []) of
-	{error, X} ->
-	    {error, X};
-	{token, Token, Rest1} ->
-	    case parse_token(Token) of
-		{error, E} -> {error, E};
-		T ->
-		    parse(Rest1, [T|Parsed])
-	    end;
-	{string, Token, Rest1} ->  %% escaped $ character
-	    parse(Rest1, [Token|Parsed])
-    end;
-parse([H|Rest], Parsed) ->
-    parse(Rest, [H|Parsed]).
-
-%%--------------------------------------------------------------------
-%% Function: collect_token(TemplatePart, TokenSoFar) -> 
-%%                                       {Token, RemainingTemplate} |
-%%                                       {error,Reason} 
-%% Description: If called I'm in a token. collect_token consumes the
-%% Template until the end of the token is found.  Returns the Token
-%% found converted in an atom or a tuple.  If the end of the Template
-%% is and no end token is found returns {error, end_token_not_found}.
-%%--------------------------------------------------------------------
-collect_token(Template, Token) ->
-    collect_token(Template, Token, 0).
-
-collect_token([], Token, _Inline) ->
-    {error, {end_token_not_found, lists:reverse(Token)}};
-collect_token("\\$"++Rest, Token, Inline) -> %% Escape sequence for \, $, {, }
-    collect_token(Rest, ["$"|Token], Inline);
-collect_token("\\{"++Rest, Token, Inline) -> %% Escape sequence for \, $, {, }
-    collect_token(Rest, ["{"|Token], Inline);
-collect_token("\\}"++Rest, Token, Inline) -> %% Escape sequence for \, $, {, }
-    collect_token(Rest, ["}"|Token], Inline);
-collect_token("\\\\"++Rest, Token, Inline) -> %% Escape sequence for \, $, {, }
-    collect_token(Rest, ["\\"|Token], Inline);
-collect_token([H|Rest], Token, 0) when [H] == "$" -> %% Inline == 0 so I'm at the end of the parse
-    case Token of
-	[] -> {string, H, Rest}; %% $$ found in the template (It's the escape sequence for $ sign
-	_ ->  {token, lists:reverse(Token), Rest}
-    end;
-collect_token([H|Rest], Token, Inline) when [H] == "$" -> %% Inline > 0 so I'm in a inline template
-    {_X, InnerToken, Rest1} = collect_token(Rest, []),
-    Inner1 = parse_token(InnerToken),
-    collect_token(Rest1, [Inner1|Token], Inline);
-collect_token([H|Rest], Token, Inline) when [H] == "{" ->
-    Inline1 = Inline + 1, 
-    collect_token(Rest, [H|Token], Inline1);
-collect_token([H|Rest], Token, Inline) when [H] == "}" ->
-    Inline1 = Inline - 1, 
-    collect_token(Rest, [H|Token], Inline1);
-collect_token([H|Rest], Token, Inline) ->
-    collect_token(Rest, [H|Token], Inline).
-
-collect_ift([], Token, T) ->
-    {error, {end_token_not_found, ift, T, lists:reverse(Token)}};
-
-collect_ift("\\$"++Rest, Token, T) -> %% Escape sequence for \, $, {, }
-    collect_ift(Rest, ["$"|Token], T);
-
-collect_ift("\\\\"++Rest, Token, T) -> %% Escape sequence for \, $, {, }
-    collect_ift(Rest, ["\\"|Token], T);
-
-collect_ift("$end if$"++Rest, Token, {Test, Then}) ->
-    {ift, {Test, Then, lists:reverse(Token)}, Rest};
-
-collect_ift("$end if$"++Rest, Token, {Test}) ->
-    {ift, {Test, lists:reverse(Token)}, Rest};
-
-collect_ift("$else$"++Rest, Token, {Test}) ->
-    collect_ift(Rest, [], {Test, lists:reverse(Token)});
-
-%% Nested if
-collect_ift("$if "++Rest, Token, {Test}) ->
-    case collect_ift(Rest, [], {}) of
-	{ift, InnerIf, Rest1} ->
-	    case parse_token({ift, InnerIf}) of
-		{error, E} -> 
-		    collect_ift(Rest1, [{error, E}, lists:reverse(Token)], {Test});    
-		ParsedIf -> 
-		    collect_ift(Rest1,[ParsedIf, lists:reverse(Token)], {Test})
-	    end;
-	{error, E} -> 
-	    collect_ift(Rest, [{error, E}, lists:reverse(Token)], {Test})
-    end;
-
-
-collect_ift([H|Rest], Token, {}) when [H] == "$" ->
-    collect_ift(Rest, [], {lists:reverse(Token)});
-
-collect_ift([H|Rest], Token, T) ->
-    collect_ift(Rest, [H|Token], T).
-
-%% Template Rules
-%% if token
-parse_token({ift, {Test, Then, Else}}) ->
-    case {parse(Then), parse(Else)} of
-	{{error, X}, _} -> {error, X};
-	{_, {error, Y}} -> {error, Y};
-	{{ok, CThen}, {ok, CElse}} -> 
-	    {ift, 
-	     {{attribute, list_to_atom(string:strip(Test))}, 
-	      CThen, CElse}
-	    }
-    end;
-parse_token({ift, {Test, Then}}) ->
-    case parse(Then) of
-	{error, X} -> {error, X};
-	{ok, CThen} ->
-	    {ift, {{attribute, list_to_atom(string:strip(Test))}, CThen}}
-    end;
-
-%% call template
-parse_token("include "++Token) ->
-    {include, erlang:list_to_atom(Token)};
-
-%% apply first argument which must be callable to second argument
-parse_token("apply "++Token) ->
-    Split = string:tokens(Token, " "),
-    case length(Split) of
-	2 -> 
-	    {apply, erlang:list_to_atom(lists:nth(1, Split)), erlang:list_to_atom(lists:nth(2, Split))};
-	_ ->
-	    {error, {invalid_apply, Token}}
-    end;
-
-%% map template
-parse_token("map "++Token) ->
-    Split = string:tokens(Token, " "),
-    case length(Split) of
-	1 -> {error, {invalid_map, Token}};
-	0 -> {error, {invalid_map, Token}};
-	X ->
-	    VarList = lists:nth(X, Split),
-	    TmplList = lists:sublist(Split, X-1),
-	    {map, [erlang:list_to_atom(El) || El <- TmplList], erlang:list_to_atom(VarList)}
-    end;
-
-%% inline map template
-parse_token("map:{"++Token) ->
-    case parse_inline(Token, []) of
-	{error, X} ->
-	    {error, X};
-	{Inline, VarList} when VarList == ""-> 
-	    {error, {invalid_map, Inline}};
-	{Inline, VarList} -> 
-	    Split = string:tokens(Inline, ","),
-	    Split1 = cons_when(Split, fun(El) -> lists:last(El) == $\\ end, []),
-	    {imap, Split1, erlang:list_to_atom(VarList)};
-	_ -> 
-	    {error, {invalid_map, Token}}
-    end;
-
-%% join template
-parse_token("join \""++Token) ->
-    Split = string:tokens(Token, "\""),
-    case length(Split) of
-	2 ->
-	    Attr = lists:last(Split),
-	    SepList = lists:sublist(Split, length(Split)-1),
-	    Concat = lists:flatten([X++"\"" || X <- SepList]),
-	    Separator = lists:sublist(Concat, length(Concat)-1),
-	    {join, Separator, erlang:list_to_atom(string:strip(Attr))};
-	_ -> {error, {invalid_join, Token}}
-    end;
-
-%% simple attribute
-parse_token(Token) ->
-    {attribute, erlang:list_to_atom(Token)}.
-
-%% parse inline template
-parse_inline("} "++Rest, SoFar) ->
-    {lists:reverse(SoFar), string:strip(Rest)};
-parse_inline("}", SoFar) ->
-    {error, {invalid_map, lists:reverse(SoFar)}};
-parse_inline([H|T], SoFar) ->
-    parse_inline(T, [H|SoFar]).
 
 %% redder_final(Attribute, Data) -> Attribute|Attribute(Data)
 %% render on final attribute.  If it's a function call it on Data,
@@ -527,27 +325,6 @@ get_value(Key, Dict, Where) ->
 	    V;
 	error ->
 	    {error, {Where, Key, not_found}}
-    end.
-
-%% Test predicate P on the head of the first argument. On success cons
-%% the first argument and second argument.  On failure append the head
-%% to the result and call itself recursively.
-cons_when([], _P, Res) ->
-    lists:reverse(Res);
-cons_when([H|Rest], P, Res) ->
-    case P(H) of
-	true ->
-	    case length(Rest) > 0 of
-		true ->
-		    [HR|Tail] = Rest,
-		    H1 = lists:sublist(H, length(H)-1) ++ "," ++ HR,
-		    cons_when(Tail, P, [H1|Res]);
-		_ ->
-		    H1 = lists:sublist(H, length(H)-1) ++ ",",
-		    cons_when(Rest, P, [H1|Res])
-	    end;
-	_ ->
-	    cons_when(Rest, P, [H|Res])
     end.
 
 %%--------------------------------------------------------------------
