@@ -106,6 +106,14 @@ parse("$map:"++T, Parsed, Line) ->
  	{error, Reason} -> 
  	    {error, {imap, Reason, Line}}
      end;
+parse("$if "++T, Parsed, Line) ->
+    Rules = [until(fun is_dollar/1), token("$else$"), token("$endif$")],
+    case parse_rules(Rules, T, []) of
+ 	{ok, Test, Rest} ->
+	    parse(Rest, [{ift, Test, Line}|Parsed], Line);
+ 	{error, Reason} -> 
+ 	    {error, {ift, Reason, Line}}
+     end;
 parse([H|T], Parsed, Line) when H == $$ andalso hd(T) == $$ ->
     parse(tl(T), [H|Parsed], Line);
 parse([H|T], Parsed, Line) when H == $$ ->
@@ -139,10 +147,16 @@ parse_rules([Rule|T], Tmpl, SoFar) ->
 	    parse_rules(T, Rest, [Tok|SoFar])
     end.
 
+%%
+%% Rules
+%%
+
+% simple: output whatever it gets in input
 simple([H|T], []) ->
     {ok, H, T}.
 
-
+% until predicate P: output what it gets until P(H) is true.
+% If all template string ends returns an error
 until(P) ->
     fun (Tmpl) -> until(P, Tmpl, []) end.
 until(_P, [], _Parsed) ->    
@@ -156,7 +170,8 @@ until(P, [H|T], Parsed) ->
     end.
 
 
-
+% Greedy version: output what it gets until a $ is reached.
+% If all template string ends returns an error
 until_greedy(P) ->
     fun (Tmpl) -> until_greedy(P, Tmpl, [], []) end.
 until_greedy(_P, [], _StrSofFar, _ResList) ->    
@@ -173,7 +188,8 @@ until_greedy(P, [H|T], StrSoFar, ResList) ->
 	    until_greedy(P, T, [H|StrSoFar], ResList)
     end.
 
-
+% Match parenthesis: Start and Stop are two predicates which matches
+% open and closed parenthesis. Inner parenthesis are coleccted to be parsed later.
 parenthesis(Start, Stop) ->
     fun (Tmpl) -> parenthesis(Start, Stop, Tmpl, 0, []) end.
 
@@ -205,38 +221,19 @@ parenthesis(Start, Stop, [H|T], Count, StrSoFar) when Count > 0 ->
 	    end
     end.
 
-if_then_else(If, Else, EndIf) ->
-    fun (Tmpl) -> if_then_else(If, Else, EndIf, Tmpl, 0, []) end.
+token(Token) ->
+    fun(Tmpl) -> token(Tmpl, [], Token) end.
 
-if_then_else(_If, _Else, _EndIf, [], _Count, _StrSoFar) ->
-    {error, end_not_found};
-if_then_else(If, Else, EndIf, [H|T], Count, StrSoFar) when Count == 0 ->
-    case If(H) of
+token([], _StrSoFar, _Token) ->
+    {error, token_not_found};
+token(Tmpl, StrSoFar, Token) ->
+    case lists:prefix(Token, Tmpl) of
 	true ->
-	    if_then_else(If, Else, EndIf, T, Count+1, StrSoFar);
+	    Rest = lists:nthtail(length(Token), Tmpl),
+	    {ok, lists:reverse(StrSoFar), Rest};
 	_ ->
-	    {error, start_not_found}
-    end;
-if_then_else(If,Else, EndIf, [H|T], Count, StrSoFar) when Count > 0 ->
-    case EndIf(H) of
-	true ->
-	    Count1 = Count - 1,
-	    case Count1 == 0 of
-		true ->
-		    {ok, lists:reverse(StrSoFar), T};
-		_ ->
-		    if_then_else(If, Else, EndIf, T, Count1, [H|StrSoFar])
-	    end;
-	_ ->
-	    case If(H) of
-		true ->
-		    if_then_else(If, Else, EndIf, T, Count+1, [H|StrSoFar]);
-		_ ->
-		    if_then_else(If, Else, EndIf, T, Count, [H|StrSoFar])
-	    end
+	    token(tl(Tmpl), [hd(Tmpl)|StrSoFar], Token)
     end.
-
-
 
 match_char(Char, Val) ->
     [Char] == Val.
