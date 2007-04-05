@@ -41,42 +41,48 @@ parse(Template) ->
 parse([], Parsed, _Line) ->
     {ok, lists:reverse(Parsed)};
 parse("$include "++T, Parsed, Line) ->
-    case parse_rules([until(fun is_dollar/1)], T, []) of
+    P = until(fun is_dollar/1),
+    case P(T) of
 	{ok, [Token], Rest} ->
 	    parse(Rest, [{include, {Token}, Line}|Parsed], Line);
 	{error, Reason} -> 
 	    {error, {include, Reason, Line}}
     end;
 parse("$apply "++T, Parsed, Line) ->
-    case parse_rules([until(fun is_space/1), until(fun is_dollar/1)], T, []) of
+    P = and_parser([until(fun is_space/1), until(fun is_dollar/1)]),    
+    case P(T) of
 	{ok, [F, V], Rest} ->
 	    parse(Rest, [{apply, {F, V}, Line}|Parsed], Line);
 	{error, Reason} -> 
 	    {error, {apply, Reason, Line}}
     end;
 parse("$map "++T, Parsed, Line) ->
-    case parse_rules([until(fun is_space/1), until(fun is_dollar/1)], T, []) of
+    P = and_parser([until(fun is_space/1), until(fun is_dollar/1)]),    
+    case P(T) of
 	{ok, [Tmpl, VList], Rest} ->
 	    parse(Rest, [{map, {Tmpl, VList}, Line}|Parsed], Line);
 	{error, Reason} -> 
 	    {error, {map, Reason, Line}}
     end;
 parse("$mapl "++T, Parsed, Line) ->
-    case parse_rules([until(fun is_space/1), until(fun is_dollar/1)], T, []) of
+    P = and_parser([until(fun is_space/1), until(fun is_dollar/1)]),    
+    case P(T) of
 	{ok, [Tmpl, VList], Rest} ->
 	    parse(Rest, [{mapl, {Tmpl, VList}, Line}|Parsed], Line);
 	{error, Reason} -> 
 	    {error, {mapl, Reason, Line}}
     end;
 parse("$mapj "++T, Parsed, Line) ->
-    case parse_rules([until(fun is_space/1), until(fun is_space/1), until(fun is_dollar/1)], T, []) of
+    P = and_parser([until(fun is_space/1), until(fun is_space/1), until(fun is_dollar/1)]),    
+    case P(T) of
 	{ok, [Tmpl, VList, Join], Rest} ->
 	    parse(Rest, [{mapj, {Tmpl, VList, Join}, Line}|Parsed], Line);
 	{error, Reason} -> 
 	    {error, {mapj, Reason, Line}}
     end;
 parse("$mmap "++T, Parsed, Line) ->
-    case parse_rules([until_greedy(fun is_space/1), until(fun is_dollar/1)], T, []) of
+    P = and_parser([until_greedy(fun is_space/1), until(fun is_dollar/1)]),    
+    case P(T) of
 	{ok, [TmplL, VList], Rest} ->
 	    parse(Rest, [{mmap, {TmplL, VList}, Line}|Parsed], Line);
 	{error, Reason} -> 
@@ -85,16 +91,18 @@ parse("$mmap "++T, Parsed, Line) ->
 parse("$join "++T, Parsed, Line) ->
     Rules = [parenthesis(fun is_open_bracket/1, fun is_close_bracket/1), 
 	     until(fun is_dollar/1)],
-     case parse_rules(Rules, T, []) of
+    P = and_parser(Rules),    
+    case P(T) of
  	{ok, [Separator, VList], Rest} ->
-	     parse(Rest, [{join, {Separator, VList}, Line}|Parsed], Line);
+	    parse(Rest, [{join, {Separator, VList}, Line}|Parsed], Line);
  	{error, Reason} -> 
  	    {error, {imap, Reason, Line}}
-     end;
+    end;
 parse("$map:"++T, Parsed, Line) ->
     Rules = [parenthesis(fun is_open_bracket/1, fun is_close_bracket/1), 
 	     until(fun is_dollar/1)],
-     case parse_rules(Rules, T, []) of
+    P = and_parser(Rules),    
+    case P(T) of
  	{ok, [Inline, VList], Rest} ->
  	    case parse(Inline) of
  		{error, {Tok, Reason, L}} ->
@@ -105,19 +113,31 @@ parse("$map:"++T, Parsed, Line) ->
  	    end;
  	{error, Reason} -> 
  	    {error, {imap, Reason, Line}}
-     end;
+    end;
 parse("$if "++T, Parsed, Line) ->
-    Rules = [until(fun is_dollar/1), token("$else$"), token("$endif$")],
-    case parse_rules(Rules, T, []) of
+    Rules1 = [token("$else$"), token("$endif$")],
+    Rules2 = [token("$endif$")],
+    P = until(fun is_dollar/1),
+    case P(T) of
  	{ok, Test, Rest} ->
-	    parse(Rest, [{ift, Test, Line}|Parsed], Line);
+	    %% parse Template for else and end if
+	    OrParser = or_parser([Rules1, Rules2]),
+	    case OrParser(Rest) of
+		{ok, [Then, Else], Rest} ->
+		    parse(Rest, [{ift, {Test, Then, Else}, Line}|Parsed], Line);
+		{ok, [Then], Rest} ->
+		    parse(Rest, [{ift, {Test, Then}, Line}|Parsed], Line);
+		{error, Reason} ->
+		    {error, {ift, Reason, Line}}
+	    end;
  	{error, Reason} -> 
  	    {error, {ift, Reason, Line}}
      end;
 parse([H|T], Parsed, Line) when H == $$ andalso hd(T) == $$ ->
     parse(tl(T), [H|Parsed], Line);
 parse([H|T], Parsed, Line) when H == $$ ->
-    case parse_rules([until(fun is_dollar/1)], T, []) of
+    P =  until(fun is_dollar/1),
+    case P(T) of
 	{ok, [Token], Rest} ->
 	    parse(Rest, [{attribute, Token, Line}|Parsed], Line);
 	{error, Reason} -> 
@@ -130,29 +150,49 @@ parse([H|T], Parsed, Line) when [H] == "\r" andalso hd(T) == "\n" ->
 parse([H|T], Parsed, Line) when [H] == "\r" orelse [H] == "\n" ->
     parse(T, [H|Parsed], Line+1);
 parse([H|T], Parsed, Line) ->
-    {ok, H1, T1} = simple([H|T], []),
+    {ok, H1, T1} = simple([H|T]),
     parse(T1, [H1|Parsed], Line).
 
    
 %%====================================================================
 %% Internal functions
 %%====================================================================     
-parse_rules([], Tmpl, SoFar) ->
+%% And parser of Rules
+and_parser(Rules) ->
+    fun(Tmpl) ->
+	    and_parser(Rules, Tmpl, [])
+    end.
+and_parser([], Tmpl, SoFar) ->
     {ok, lists:reverse(SoFar), Tmpl};
-parse_rules([Rule|T], Tmpl, SoFar) ->
+and_parser([Rule|T], Tmpl, SoFar) ->
     case Rule(Tmpl) of
 	{error, Reason} ->
 	    {error, Reason};
 	{ok, Tok, Rest} ->
-	    parse_rules(T, Rest, [Tok|SoFar])
+	    and_parser(T, Rest, [Tok|SoFar])
+    end.
+
+%% Or parser of Rules
+%% FIXME: Rules could be checked in parallel
+or_parser(Rules) ->
+    fun(Tmpl) ->
+	    or_parser(Rules, Tmpl)
+    end.
+or_parser([], _Tmpl) ->
+    {error, no_matching_rule};
+or_parser([Rule|T], Tmpl) ->
+    case Rule(Tmpl) of
+	{error, _Reason} -> %% check next rule
+	    or_parser(T, Tmpl);
+	{ok, Tok, Rest} -> %match -> return the result
+	    {ok, Tok, Rest}
     end.
 
 %%
 %% Rules
 %%
-
 % simple: output whatever it gets in input
-simple([H|T], []) ->
+simple([H|T]) ->
     {ok, H, T}.
 
 % until predicate P: output what it gets until P(H) is true.
