@@ -1,4 +1,4 @@
--module(compile).
+-module(sgte_compile).
 
 -export([test_attr/0, test_attr_multiline/0]).
 -export([test_include/0, test_apply/0]).
@@ -17,9 +17,9 @@ test_attr() ->
     sgeunit:assert_equal(Compiled, "foo " ++ [{attribute, bar, 1}] ++ " baz").
 
 test_attr_multiline() ->
-    Str = "foo "
-	"$bar$ "
-	"baz",
+    Str = "foo 
+$bar$
+ baz",
     {ok, Compiled} = sgte:compile(Str),
     sgeunit:assert_equal(Compiled, "foo \n" ++ [{attribute, bar, 2}] ++ "\n baz").
 
