@@ -43,8 +43,8 @@ parse([], Parsed, _Line) ->
 parse("$include "++T, Parsed, Line) ->
     P = until(fun is_dollar/1),
     case P(T) of
-	{ok, [Token], Rest} ->
-	    parse(Rest, [{include, {Token}, Line}|Parsed], Line);
+	{ok, Token, Rest} ->
+	    parse(Rest, [{include, Token, Line}|Parsed], Line);
 	{error, Reason} -> 
 	    {error, {include, Reason, Line}}
     end;
@@ -138,7 +138,7 @@ parse([H|T], Parsed, Line) when H == $$ andalso hd(T) == $$ ->
 parse([H|T], Parsed, Line) when H == $$ ->
     P =  until(fun is_dollar/1),
     case P(T) of
-	{ok, [Token], Rest} ->
+	{ok, Token, Rest} ->
 	    parse(Rest, [{attribute, Token, Line}|Parsed], Line);
 	{error, Reason} -> 
 	    {error, {attribute, Reason, Line}}
