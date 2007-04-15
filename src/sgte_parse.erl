@@ -40,63 +40,55 @@ parse(Template) ->
 
 parse([], Parsed, _Line) ->
     {ok, lists:reverse(Parsed)};
-parse("$include "++T, Parsed, Line) ->
-    P = until(fun is_dollar/1),
+parse("$include"++T, Parsed, Line) ->
+    P = and_parser([fun strip_blank/1, 
+		    until(fun is_dollar/1)]),
     case P(T) of
-	{ok, Token, Rest} ->
+	{ok, [Token], Rest} ->
 	    parse(Rest, [{include, Token, Line}|Parsed], Line);
 	{error, Reason} -> 
 	    {error, {include, Reason, Line}}
     end;
-parse("$apply "++T, Parsed, Line) ->
-    P = and_parser([until(fun is_space/1), until(fun is_dollar/1)]),    
+parse("$apply"++T, Parsed, Line) ->
+    P = and_parser([fun strip_blank/1, 
+		    until_space(fun is_blank/1), 
+		    until(fun is_dollar/1)]),
     case P(T) of
 	{ok, [F, V], Rest} ->
 	    parse(Rest, [{apply, {F, V}, Line}|Parsed], Line);
 	{error, Reason} -> 
 	    {error, {apply, Reason, Line}}
     end;
-parse("$map "++T, Parsed, Line) ->
-    P = and_parser([until(fun is_space/1), until(fun is_dollar/1)]),    
-    case P(T) of
-	{ok, [Tmpl, VList], Rest} ->
-	    parse(Rest, [{map, {Tmpl, VList}, Line}|Parsed], Line);
-	{error, Reason} -> 
-	    {error, {map, Reason, Line}}
-    end;
-parse("$mapl "++T, Parsed, Line) ->
-    P = and_parser([until(fun is_space/1), until(fun is_dollar/1)]),    
+parse("$mapl"++T, Parsed, Line) ->
+    P = and_parser([fun strip_blank/1, 
+		    until_space(fun is_blank/1), 
+		    until(fun is_dollar/1)]),    
     case P(T) of
 	{ok, [Tmpl, VList], Rest} ->
 	    parse(Rest, [{mapl, {Tmpl, VList}, Line}|Parsed], Line);
 	{error, Reason} -> 
 	    {error, {mapl, Reason, Line}}
     end;
-parse("$mapj "++T, Parsed, Line) ->
-    P = and_parser([until(fun is_space/1), until(fun is_space/1), until(fun is_dollar/1)]),    
+parse("$mapj"++T, Parsed, Line) ->
+    P = and_parser([fun strip_blank/1, 
+		    until_space(fun is_blank/1), 
+		    until_space(fun is_blank/1), 
+		    until(fun is_dollar/1)]),    
     case P(T) of
 	{ok, [Tmpl, VList, Join], Rest} ->
 	    parse(Rest, [{mapj, {Tmpl, VList, Join}, Line}|Parsed], Line);
 	{error, Reason} -> 
 	    {error, {mapj, Reason, Line}}
     end;
-parse("$mmap "++T, Parsed, Line) ->
-    P = and_parser([until_greedy(fun is_space/1), until(fun is_dollar/1)]),    
+parse("$mmap"++T, Parsed, Line) ->
+    P = and_parser([fun strip_blank/1, 
+		    until_greedy(fun is_blank/1), 
+		    until(fun is_dollar/1)]),    
     case P(T) of
 	{ok, [TmplL, VList], Rest} ->
 	    parse(Rest, [{mmap, {TmplL, VList}, Line}|Parsed], Line);
 	{error, Reason} -> 
 	    {error, {mmap, Reason, Line}}
-    end;
-parse("$join "++T, Parsed, Line) ->
-    Rules = [parenthesis(fun is_open_bracket/1, fun is_close_bracket/1), 
-	     until(fun is_dollar/1)],
-    P = and_parser(Rules),    
-    case P(T) of
- 	{ok, [Separator, VList], Rest} ->
-	    parse(Rest, [{join, {Separator, VList}, Line}|Parsed], Line);
- 	{error, Reason} -> 
- 	    {error, {imap, Reason, Line}}
     end;
 parse("$map:"++T, Parsed, Line) ->
     Rules = [parenthesis(fun is_open_bracket/1, fun is_close_bracket/1), 
@@ -111,6 +103,27 @@ parse("$map:"++T, Parsed, Line) ->
 		    L = element(size(P), P),
  		    parse(Rest, [{imap, {[P], VList}, Line}|Parsed], Line+L)
  	    end;
+ 	{error, Reason} -> 
+ 	    {error, {imap, Reason, Line}}
+    end;
+parse("$map"++T, Parsed, Line) ->
+    P = and_parser([fun strip_blank/1, 
+		    until_space(fun is_blank/1), 
+		    until(fun is_dollar/1)]),    
+    case P(T) of
+	{ok, [Tmpl, VList], Rest} ->
+	    parse(Rest, [{map, {Tmpl, VList}, Line}|Parsed], Line);
+	{error, Reason} -> 
+	    {error, {map, Reason, Line}}
+    end;
+parse("$join"++T, Parsed, Line) ->
+    Rules = [fun strip_blank/1, 
+	     parenthesis(fun is_open_bracket/1, fun is_close_bracket/1), 
+	     until(fun is_dollar/1)],
+    P = and_parser(Rules),    
+    case P(T) of
+ 	{ok, [Separator, VList], Rest} ->
+	    parse(Rest, [{join, {Separator, VList}, Line}|Parsed], Line);
  	{error, Reason} -> 
  	    {error, {imap, Reason, Line}}
     end;
@@ -168,6 +181,8 @@ and_parser([Rule|T], Tmpl, SoFar) ->
     case Rule(Tmpl) of
 	{error, Reason} ->
 	    {error, Reason};
+	{ok, Rest} ->
+	    and_parser(T, Rest, SoFar);
 	{ok, Tok, Rest} ->
 	    and_parser(T, Rest, [Tok|SoFar])
     end.
@@ -195,18 +210,50 @@ or_parser([Rule|T], Tmpl) ->
 simple([H|T]) ->
     {ok, H, T}.
 
-% until predicate P: output what it gets until P(H) is true.
-% If all template string ends returns an error
+% strip blanks from Tmpl.
+strip_blank([H|T]) ->
+    case is_blank(H) of
+	true ->
+	    strip_blank1(T);
+	_ ->
+	    {error, blank_not_found}
+    end.
+strip_blank1([]) ->
+    {ok, []};
+strip_blank1([H|T]) ->
+    case is_blank(H) of
+	true ->
+	    strip_blank1(T);
+	_ ->
+	    {ok, [H|T]}
+    end.
+
+% until predicate P: output what it gets until P(H) is true stripping white spaces.
 until(P) ->
     fun (Tmpl) -> until(P, Tmpl, []) end.
 until(_P, [], _Parsed) ->    
     {error, end_not_found};
+until(P, [H|T], Parsed) when [H]==" " orelse [H]=="\n" orelse[H]== "\r" ->
+    until(P, T, Parsed);
 until(P, [H|T], Parsed) ->
     case P(H) of
 	true ->
-	    {ok, list_to_atom(string:strip(lists:reverse(Parsed))), T};
+	    {ok, list_to_atom(lists:reverse(Parsed)), T};
 	_ ->
 	    until(P, T, [H|Parsed])
+    end.
+
+% until predicate P without stripping white spaces
+until_space(P) ->
+    fun (Tmpl) -> until_space(P, Tmpl, []) end.
+until_space(_P, [], _Parsed) ->    
+    {error, end_not_found};
+until_space(P, [H|T], Parsed) ->
+    case P(H) of
+	true ->
+	    {ok, list_to_atom(lists:reverse(Parsed)), T};
+	_ ->
+	    until_space(P, T, [H|Parsed])
     end.
 
 
@@ -278,8 +325,10 @@ token(Tmpl, StrSoFar, Token) ->
 match_char(Char, Val) ->
     [Char] == Val.
 
-is_space(C) ->
-    match_char(C, " ").
+is_blank(C) ->
+    match_char(C, " ") 
+	orelse match_char(C, "\n")
+	orelse match_char(C, "\r").
 is_dollar(C) ->
     match_char(C, "$").
 is_open_bracket(C) ->

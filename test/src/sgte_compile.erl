@@ -1,7 +1,8 @@
 -module(sgte_compile).
 
 -export([test_attr/0, test_attr_multiline/0]).
--export([test_include/0, test_apply/0]).
+-export([test_include/0, test_include_multiline/0]).
+-export([test_apply/0]).
 -export([test_map/0, test_mapl/0]).
 -export([test_mapj/0, test_mmap/0]).
 -export([test_inline_map/0, test_if/0]).
@@ -18,13 +19,20 @@ test_attr() ->
 
 test_attr_multiline() ->
     Str = "foo 
-$bar$
+$bar
+$
  baz",
     {ok, Compiled} = sgte:compile(Str),
     sgeunit:assert_equal(Compiled, "foo \n" ++ [{attribute, bar, 2}] ++ "\n baz").
 
 test_include() ->
     {ok, C} = sgte:compile("foo $include tmpl$ baz"),
+    sgeunit:assert_equal(C, "foo " ++ [{include, tmpl, 1}] ++ " baz").
+
+test_include_multiline() ->
+    Str = "foo $include
+tmpl$ baz",
+    {ok, C} = sgte:compile(Str),
     sgeunit:assert_equal(C, "foo " ++ [{include, tmpl, 1}] ++ " baz").
 
 test_apply() ->
@@ -40,7 +48,7 @@ test_mmap() ->
     sgeunit:assert_equal(C, "foo " ++ [{mmap, {[bar, baz], varList}, 1}]).
 
 test_mapl() ->
-    {ok, C} = sgte:compile("foo $mapl bar varList$"),
+    {ok, C} = sgte:compile("foo $mapl    bar varList$"),
     sgeunit:assert_equal(C, "foo " ++ [{mapl, {bar, varList}, 1}]).
 
 test_mapj() ->
