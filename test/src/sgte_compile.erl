@@ -5,7 +5,8 @@
 -export([test_apply/0]).
 -export([test_map/0, test_mapl/0]).
 -export([test_mapj/0, test_mmap/0]).
--export([test_inline_map/0, test_if/0]).
+-export([test_inline_map/0]).
+-export([test_join/0, test_if/0]).
 
 %%--------------------
 %%
@@ -56,13 +57,19 @@ test_mapj() ->
     sgeunit:assert_equal(C, "foo " ++ [{mapj, {bar, varList, separator}, 1}]).
 
 test_inline_map() ->
-    sgeunit:fail().
+    {ok, C} = sgte:compile("foo $map:{template: $attr$} values$"),
+    Result = "foo " ++ [{imap, {["template: " ++ [{attribute, attr, 1}]], values}, 1}],
+    sgeunit:assert_equal(C, Result).
+
+
+test_join() ->
+    {ok, C} = sgte:compile("foo $join {separator} values$"),
+    sgeunit:assert_equal(C, "foo " ++ [{join, {"separator", values}, 1}]).
 
 test_if() ->
-    sgeunit:fail().
-%%     {ok, C} = sgte:compile(simple_if()),
-%%     Result = "Start " ++ [{ift, {{attribute, test}, "then branch", "else branch"}}],
-%%     sgeunit:assert_equal(C, Result).
+    {ok, C} = sgte:compile(simple_if()),
+    Result = "Start " ++ [{ift, {{attribute, test}, "then branch", "else branch"}, 1}],
+    sgeunit:assert_equal(C, Result).
 
 
 %%--------------------

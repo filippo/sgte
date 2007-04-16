@@ -99,9 +99,8 @@ parse("$map:"++T, Parsed, Line) ->
  	    case parse(Inline) of
  		{error, {Tok, Reason, L}} ->
  		    {error, {Tok, Reason, Line+L}};
- 		{ok, P} ->
-		    L = element(size(P), P),
- 		    parse(Rest, [{imap, {[P], VList}, Line}|Parsed], Line+L)
+ 		{ok, InlP} ->
+ 		    parse(Rest, [{imap, {[InlP], VList}, Line}|Parsed], Line)
  	    end;
  	{error, Reason} -> 
  	    {error, {imap, Reason, Line}}
@@ -128,24 +127,18 @@ parse("$join"++T, Parsed, Line) ->
  	    {error, {imap, Reason, Line}}
     end;
 parse("$if "++T, Parsed, Line) ->
-    Rules1 = [token("$else$"), token("$endif$")],
-    Rules2 = [token("$endif$")],
-    P = until(fun is_dollar/1),
-    case P(T) of
- 	{ok, Test, Rest} ->
-	    %% parse Template for else and end if
-	    OrParser = or_parser([Rules1, Rules2]),
-	    case OrParser(Rest) of
-		{ok, [Then, Else], Rest} ->
-		    parse(Rest, [{ift, {Test, Then, Else}, Line}|Parsed], Line);
-		{ok, [Then], Rest} ->
-		    parse(Rest, [{ift, {Test, Then}, Line}|Parsed], Line);
-		{error, Reason} ->
-		    {error, {ift, Reason, Line}}
-	    end;
- 	{error, Reason} -> 
- 	    {error, {ift, Reason, Line}}
-     end;
+    %% if uses the code from the old version. See if it can be improved
+    IfTmpl = collect_ift(T, [], {}),
+    case IfTmpl of
+	{error, Reason} ->
+	    {error, {ift, Reason, Line}};
+	{ift, IfToken, Rest1} ->
+	    case parse_ift(IfToken) of
+		{error, Reason} -> {error, {ift, Reason, Line}};
+		{ift, ParsedIf} -> 
+		    parse(Rest1, [{ift, ParsedIf, Line}|Parsed], Line)
+	    end
+    end;
 parse([H|T], Parsed, Line) when H == $$ andalso hd(T) == $$ ->
     parse(tl(T), [H|Parsed], Line);
 parse([H|T], Parsed, Line) when H == $$ ->
@@ -170,6 +163,57 @@ parse([H|T], Parsed, Line) ->
 %%====================================================================
 %% Internal functions
 %%====================================================================     
+%% collect if token till $end if$
+collect_ift([], _Token, _T) ->
+    {error, end_not_found};
+collect_ift("\\$"++Rest, Token, T) -> %% Escape sequence for \, $, {, }
+    collect_ift(Rest, ["$"|Token], T);
+collect_ift("\\\\"++Rest, Token, T) -> %% Escape sequence for \, $, {, }
+    collect_ift(Rest, ["\\"|Token], T);
+collect_ift("$end if$"++Rest, Token, {Test, Then}) ->
+    {ift, {Test, Then, lists:reverse(Token)}, Rest};
+collect_ift("$end if$"++Rest, Token, {Test}) ->
+    {ift, {Test, lists:reverse(Token)}, Rest};
+collect_ift("$else$"++Rest, Token, {Test}) ->
+    collect_ift(Rest, [], {Test, lists:reverse(Token)});
+
+%% Nested if
+collect_ift("$if "++Rest, Token, {Test}) ->
+    case collect_ift(Rest, [], {}) of
+	{ift, InnerIf, Rest1} ->
+	    case parse_ift(InnerIf) of
+		{error, Reason} -> 
+		    {error, Reason};
+		ParsedIf -> 
+		    collect_ift(Rest1,[ParsedIf, lists:reverse(Token)], {Test})
+	    end;
+	{error, E} -> 
+	    collect_ift(Rest, [{error, E}, lists:reverse(Token)], {Test})
+    end;
+collect_ift([H|Rest], Token, {}) when [H] == "$" ->
+    collect_ift(Rest, [], {lists:reverse(Token)});
+collect_ift([H|Rest], Token, T) ->
+    collect_ift(Rest, [H|Token], T).
+
+
+%% if token parser
+parse_ift({Test, Then, Else}) ->
+    case {parse(Then), parse(Else)} of
+	{{error, Reason1}, _} -> {error, Reason1};
+	{_, {error, Reason2}} -> {error, Reason2};
+	{{ok, CThen}, {ok, CElse}} -> 
+	    {ift, 
+	     {{attribute, list_to_atom(string:strip(Test))}, 
+	      CThen, CElse}
+	    }
+    end;
+parse_ift({Test, Then}) ->
+    case parse(Then) of
+	{error, Reason} -> {error, Reason};
+	{ok, CThen} ->
+	    {ift, {{attribute, list_to_atom(string:strip(Test))}, CThen}}
+    end.
+
 %% And parser of Rules
 and_parser(Rules) ->
     fun(Tmpl) ->
@@ -187,21 +231,20 @@ and_parser([Rule|T], Tmpl, SoFar) ->
 	    and_parser(T, Rest, [Tok|SoFar])
     end.
 
-%% Or parser of Rules
-%% FIXME: Rules could be checked in parallel
-or_parser(Rules) ->
-    fun(Tmpl) ->
-	    or_parser(Rules, Tmpl)
-    end.
-or_parser([], _Tmpl) ->
-    {error, no_matching_rule};
-or_parser([Rule|T], Tmpl) ->
-    case Rule(Tmpl) of
-	{error, _Reason} -> %% check next rule
-	    or_parser(T, Tmpl);
-	{ok, Tok, Rest} -> %match -> return the result
-	    {ok, Tok, Rest}
-    end.
+%% %% Or parser of Rules
+%% or_parser(Rules) ->
+%%     fun(Tmpl) ->
+%% 	    or_parser(Rules, Tmpl)
+%%     end.
+%% or_parser([], _Tmpl) ->
+%%     {error, no_matching_rule};
+%% or_parser([Rule|T], Tmpl) ->
+%%     case Rule(Tmpl) of
+%% 	{error, _Reason} -> %% check next rule
+%% 	    or_parser(T, Tmpl);
+%% 	{ok, Tok, Rest} -> %match -> return the result
+%% 	    {ok, Tok, Rest}
+%%     end.
 
 %%
 %% Rules
@@ -308,19 +351,19 @@ parenthesis(Start, Stop, [H|T], Count, StrSoFar) when Count > 0 ->
 	    end
     end.
 
-token(Token) ->
-    fun(Tmpl) -> token(Tmpl, [], Token) end.
+%% token(Token) ->
+%%     fun(Tmpl) -> token(Tmpl, [], Token) end.
 
-token([], _StrSoFar, _Token) ->
-    {error, token_not_found};
-token(Tmpl, StrSoFar, Token) ->
-    case lists:prefix(Token, Tmpl) of
-	true ->
-	    Rest = lists:nthtail(length(Token), Tmpl),
-	    {ok, lists:reverse(StrSoFar), Rest};
-	_ ->
-	    token(tl(Tmpl), [hd(Tmpl)|StrSoFar], Token)
-    end.
+%% token([], _StrSoFar, _Token) ->
+%%     {error, token_not_found};
+%% token(Tmpl, StrSoFar, Token) ->
+%%     case lists:prefix(Token, Tmpl) of
+%% 	true ->
+%% 	    Rest = lists:nthtail(length(Token), Tmpl),
+%% 	    {ok, lists:reverse(StrSoFar), Rest};
+%% 	_ ->
+%% 	    token(tl(Tmpl), [hd(Tmpl)|StrSoFar], Token)
+%%     end.
 
 match_char(Char, Val) ->
     [Char] == Val.
