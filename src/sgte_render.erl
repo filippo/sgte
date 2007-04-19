@@ -39,20 +39,19 @@
 %% @end
 %%--------------------------------------------------------------------
 render(Compiled, Data) when is_list(Data) ->
-    Data1 = list_to_dict(Data), %% convert data from list to dict
-    render(Compiled, Data1);
+    render(Compiled, dict:from_list(Data));
 render(Compiled, Data) when is_function(Compiled) ->
     render_final(Compiled, Data);
 render(Compiled, Data) ->
     lists:flatten([render_element(X, Data) || X <- Compiled]).
-%% used for map Attr is a tuple {attr, Value}
+
+%% used for map Attr is a tuple {Key, Value}
 render(Compiled, Data, Attr) when is_list(Attr) ->
     Data1 = dict:merge(fun(_K, _V1, V2) -> V2 end, Data, dict:from_list(Attr)),
     lists:flatten([render_element(X, Data1) || X <- Compiled]);
 render(Compiled, Data, Attr) when is_function(Compiled) ->
     {K, V} = Attr,
-    Data1 = dict:store(K, V, Data),
-    render_final(Compiled, Data1);
+    render_final(Compiled, dict:store(K, V, Data));
 render(Compiled, Data, Attr) ->
     {K, V} = Attr,
     Data1 = dict:store(K, V, Data),
@@ -86,48 +85,66 @@ render_final(Term) ->
 %% Function: render_element(Term, Data) -> Value
 %% Description: render an element in the parsed template.
 %%--------------------------------------------------------------------
-render_element({attribute, Term}, Data) ->
+render_element({attribute, Term, Line}, Data) ->
     case get_value(Term, Data, attribute) of
 	{error, X} ->
-	    render_error({error, X});
+	    render_error({error, X, {line, Line}});
 	Value ->
-	    render_final(Value, Data)
+	    render_final(Value)
     end;
-render_element({join, Separator, Term}, Data) ->
+render_element({join, {Separator, Term}, Line}, Data) ->
     case get_value(Term, Data, join) of
 	{error, X} ->
-	    render_error({error, X});
+	    render_error({error, X, {line, Line}});
 	ValueList ->
 	    Concat = lists:flatten([X++Separator || X <- ValueList]),
 	    Value = string:sub_string(Concat, 1, length(Concat)-length(Separator)),
 	    Value
     end;
 
-render_element({include, Tmpl}, Data) -> %% include template passing all data
+render_element({include, Tmpl, Line}, Data) -> %% include template passing all data
     case get_value(Tmpl, Data, include) of
 	{error, X} ->
-	    render_error({error, X});
+	    render_error({error, X, {line, Line}});
 	Compiled ->
 	    render(Compiled, Data)
     end;
 
-render_element({apply, Callable, Var}, Data) -> %% apply first element to Var
+render_element({apply, {Callable, Var}, Line}, Data) -> %% apply first element to Var
     case get_value(Callable, Data, apply) of
 	{error, X} ->
-	    render_error({error, X});
+	    render_error({error, X, {line, Line}});
 	ToCall ->
 	    case get_value(Var, Data, apply) of
 		{error, X} ->
-		    render_error({error, X});
+		    render_error({error, X, {line, Line}});
 		Value ->
 		    render_final(ToCall, Value)
 	    end
     end;
 
-render_element({map, Tmpl, Term}, Data) ->
-    case get_value(Term, Data, map) of
+render_element({map, {Tmpl, Term}, Line}, Data) ->
+    case {get_value(Tmpl, Data, map), get_value(Term, Data, map)} of
+	{{error, X}, _} ->
+	    render_error({error, X, {line, Line}});
+	{_, {error, X}} ->
+	    render_error({error, X, {line, Line}});
+	{CT, ValueList} ->
+	    [render(CT, Data, V) || V <- ValueList]
+    end;
+render_element({mapl, {Tmpl, Term}, Line}, Data) ->
+    case {get_value(Tmpl, Data, mapl), get_value(Term, Data, mapl)} of
+	{{error, X}, _} ->
+	    render_error({error, X, {line, Line}});
+	{_, {error, X}} ->
+	    render_error({error, X, {line, Line}});
+	{CT, ValueList} ->
+	    [render(CT, Data, {attr, V}) || V <- ValueList]
+    end;
+render_element({mmap, {Tmpl, Term}, Line}, Data) ->
+    case get_value(Term, Data, mmap) of
 	{error, X} ->
-	    render_error({error, X});
+	    render_error({error, X, {line, Line}});
 	ValueList ->
 	    ExtractTmpl = fun(El, Acc) ->
 				  Compiled = get_value(El, Data, map),
@@ -138,19 +155,19 @@ render_element({map, Tmpl, Term}, Data) ->
 	    Zipped = group(CompiledList, ValueList), 
 	    [render(CT, Data, V) || {CT, V} <- Zipped]
     end;
-render_element({imap, TmplList, Term}, Data) ->
+render_element({imap, {[TmplList], Term}, Line}, Data) ->
     case get_value(Term, Data, imap) of
 	{error, X} ->
-	    render_error({error, X});
+	    render_error({error, X, {line, Line}});
 	ValueList ->
 	    % Zipped is a tuple list: [{tmpl1, val1}, {tmpl2, val2},{tmpl1, val3} ...]
 	    Zipped = group(TmplList, ValueList), 
 	    [render(CT, Data, V) || {CT, V} <- Zipped]
     end;
-render_element({ift, {{attribute, Test}, Then, Else}}, Data) ->
+render_element({ift, {{attribute, Test}, Then, Else}, Line}, Data) ->
     case get_value(Test, Data, ift) of
 	{error, X} ->
-	    render_error({error, X});
+	    render_error({error, X, {line, Line}});
 	TestP ->
 	    case render_final(TestP, Data) of
 		true ->
@@ -160,10 +177,10 @@ render_element({ift, {{attribute, Test}, Then, Else}}, Data) ->
 	    end,
 	    Res
     end;
-render_element({ift, {{attribute, Test}, Then}}, Data) ->
+render_element({ift, {{attribute, Test}, Then}, Line}, Data) ->
     case get_value(Test, Data, ift) of
 	{error, X} ->
-	    render_error({error, X});
+	    render_error({error, X, {line, Line}});
 	TestP ->
 	    case render_final(TestP, Data) of
 		true ->
@@ -176,9 +193,8 @@ render_element({ift, {{attribute, Test}, Then}}, Data) ->
 render_element(Term, _Data) ->
     render_final(Term).
 
-%% Render an error in the get_value
-render_error({error, {TmplEl, Key, not_found}}) ->
-    io_lib:format("[SGTE Error: template: ~p - key ~p not found]", [TmplEl, Key]);
+render_error({error, {TmplEl, Key, not_found}, {line, LineNo}}) ->
+    io_lib:format("[SGTE Error: template: ~p - key ~p not found on line ~p]", [TmplEl, Key, LineNo]);
 %% Render an error in the data type format
 render_error({error, {Term, DataType, invalid_data}}) ->
     io_lib:format("[SGTE Error: invalid data type: ~p is a ~p. String expected]", [Term, DataType]).
@@ -195,18 +211,6 @@ get_value(Key, Dict, Where) ->
 	error ->
 	    {error, {Where, Key, not_found}}
     end.
-
-%%--------------------------------------------------------------------
-%% Function: list_to_dict(List) -> Dict
-%% Description: List is a list of {Key, Value} tuples. 
-%% Build a dict from the list and returns it.
-%%--------------------------------------------------------------------
-list_to_dict(List) ->
-    Converter = fun(El, Acc) ->
-			{K, V} = El,
-			dict:store(K, V, Acc)
-		end,
-    lists:foldl(Converter, dict:new(), List).
 
 %% build a list of tuple [{El1, El2}].
 %% If length(L1) < length(L2) when elements of L1 end restart with the complete list L1
