@@ -1,10 +1,5 @@
 -module(sgte_test).
 
--export([test_compile_attr/0, test_compile_include/0, test_compile_apply/0]).
--export([test_compile_map/0, test_compile_inline_map/0, test_compile_mmap/0]).
--export([test_compile_if/0]).
--export([test_compile_imap_js/0, test_compile_imap_comma/0]).
-
 -export([test_string/0, test_string_err/0, test_include/0, test_apply/0]).
 -export([test_simpleif/0, test_fif/0, test_fif2/0, test_nested_fif/0, test_if/0]).
 -export([test_map/0, test_map_on_empty_list/0, test_mmap/0]).
@@ -18,54 +13,6 @@
 %% Tests
 %%
 %%--------------------
-%%
-%% Compile Test
-%%
-test_compile_attr() ->
-    Str = "foo $bar$ baz",
-    {ok, Compiled} = sgte:compile(Str),
-    sgeunit:assert_equal(Compiled, "foo " ++ [{attribute, bar}] ++ " baz").
-
-test_compile_include() ->
-    {ok, C} = sgte:compile("foo $include tmpl$ baz"),
-    sgeunit:assert_equal(C, "foo " ++ [{include, tmpl}] ++ " baz").
-
-test_compile_apply() ->
-    {ok, C} = sgte:compile("foo $apply bar myVar$ baz"),
-    sgeunit:assert_equal(C, "foo " ++ [{apply, bar, myVar}] ++ " baz").
-
-test_compile_map() ->
-    {ok, C} = sgte:compile("foo $map bar varList$ baz"),
-    sgeunit:assert_equal(C, "foo " ++ [{map, [bar], varList}] ++ " baz").
-
-test_compile_mmap() ->
-    {ok, C} = sgte:compile("foo $map bar baz varList$"),
-    sgeunit:assert_equal(C, "foo " ++ [{map, [bar, baz], varList}]).
-
-test_compile_inline_map() ->
-    {ok, C} = sgte:compile("foo $map:{text $var$ other text} varList$ baz"),
-    Result = "foo " ++ 
-	      [{imap, ["text " ++ [{attribute, var}] ++ " other text"], varList}] ++ 
-	      " baz",
-    sgeunit:assert_equal(C, Result).
-
-test_compile_if() ->
-    {ok, C} = sgte:compile(simple_if()),
-    Result = "Start " ++ [{ift, {{attribute, test}, "then branch", "else branch"}}],
-    sgeunit:assert_equal(C, Result).
-
-test_compile_imap_js() ->
-    {ok, C} = sgte:compile(imap_js()),
-    Result = [{imap, ["\"#" ++ [{attribute, owner}] ++
-		      "\": function(t) {save_owner(\""++[{attribute, owner}]++"\",", "t.id);},"], owners}],
-    sgeunit:assert_equal(C, Result).
-
-test_compile_imap_comma() ->
-    {ok, C} = sgte:compile(imap_comma()),
-    Result = [{imap, [[{attribute, attr}] ++
-		      ", "], attrList}],
-    sgeunit:assert_equal(C, Result).
-
 %%
 %% Render Test
 %%
@@ -84,7 +31,7 @@ test_string_err() ->
     {ok, Compiled} = sgte:compile(Str),
     Res = sgte:render(Compiled, []),
     ResultStr = "This is a test:\n" ++
-	"[SGTE Error: template: attribute - key 'testFun()' not found] followed by [SGTE Error: template: attribute - key testData not found] and unicode chars àèìòù",
+	"[SGTE Error: template: attribute - key 'testFun()' not found on line 2] followed by [SGTE Error: template: attribute - key testData not found on line 2] and unicode chars àèìòù",
     sgeunit:assert_equal(Res, ResultStr).
 
 test_include() ->
@@ -303,7 +250,7 @@ print_inline_mountains2() ->
 	"</ul>".
 print_mmap() ->
     "<ul>" ++
-	"$map row1 row2 nameList$" ++
+	"$mmap row1 row2 nameList$" ++
     "</ul>".
 row1() ->
     "<li class=\"riga1\"><b>$mountain$</b></li>".

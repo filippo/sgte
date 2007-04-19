@@ -1,11 +1,9 @@
 -module(run_tests).
 
--export([start_link/0, run_tests/1]).
+-export([init/0, run_tests/1]).
 
-start_link() ->
-    sin_task_manager:start_task(test),
-    run_tests([sgte_test]),
-    sin_task_manager:finish_task(test).
+init() ->
+    run_tests([sgte_render, sgte_compile]).
 run_tests([]) ->
     done;
 run_tests([H|T]) ->
