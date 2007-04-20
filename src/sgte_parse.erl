@@ -91,7 +91,8 @@ parse("$mmap"++T, Parsed, Line) ->
 	    {error, {mmap, Reason, Line}}
     end;
 parse("$map:"++T, Parsed, Line) ->
-    Rules = [parenthesis(fun is_open_bracket/1, fun is_close_bracket/1), 
+    Rules = [fun can_be_blank/1, 
+	     parenthesis(fun is_open_bracket/1, fun is_close_bracket/1), 
 	     until(fun is_dollar/1)],
     P = and_parser(Rules),    
     case P(T) of
@@ -115,8 +116,8 @@ parse("$map"++T, Parsed, Line) ->
 	{error, Reason} -> 
 	    {error, {map, Reason, Line}}
     end;
-parse("$join"++T, Parsed, Line) ->
-    Rules = [fun strip_blank/1, 
+parse("$join:"++T, Parsed, Line) ->
+    Rules = [fun can_be_blank/1, 
 	     parenthesis(fun is_open_bracket/1, fun is_close_bracket/1), 
 	     until(fun is_dollar/1)],
     P = and_parser(Rules),    
@@ -258,6 +259,14 @@ and_parser([Rule|T], Tmpl, SoFar, Line) ->
 simple([H|T]) ->
     {ok, H, 0, T}.
 
+% strip blanks if found.
+can_be_blank([H|T]) ->
+    case is_blank(H) of
+	true ->
+	    strip_blank1(T, 0);
+	_ ->
+	    {ok, [H|T], 0}
+    end.
 % strip blanks from Tmpl.
 strip_blank([H|T]) ->
     case is_blank(H) of
