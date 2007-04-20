@@ -76,8 +76,6 @@ render_final(Term) when is_atom(Term) ->
     render_error({error, {Term, atom, invalid_data}});
 render_final(Term) when is_pid(Term) ->
     render_error({error, {Term, pid, invalid_data}});
-render_final(Term) when is_function(Term) ->
-    Term();
 render_final(Term) ->
     Term.
     
@@ -90,7 +88,7 @@ render_element({attribute, Term, Line}, Data) ->
 	{error, X} ->
 	    render_error({error, X, {line, Line}});
 	Value ->
-	    render_final(Value)
+	    render_final(Value, Data)
     end;
 render_element({join, {Separator, Term}, Line}, Data) ->
     case get_value(Term, Data, join) of
@@ -160,9 +158,11 @@ render_element({imap, {[TmplList], Term}, Line}, Data) ->
 	{error, X} ->
 	    render_error({error, X, {line, Line}});
 	ValueList ->
-	    % Zipped is a tuple list: [{tmpl1, val1}, {tmpl2, val2},{tmpl1, val3} ...]
-	    Zipped = group(TmplList, ValueList), 
-	    [render(CT, Data, V) || {CT, V} <- Zipped]
+	    [render(TmplList, Data, V) || V <- ValueList]
+%% 	    io:format("aaaaaa"),
+%% 	    % Zipped is a tuple list: [{tmpl1, val1}, {tmpl2, val2},{tmpl1, val3} ...]
+%% 	    Zipped = group(TmplList, ValueList), 
+%% 	    [render(CT, Data, V) || {CT, V} <- Zipped]
     end;
 render_element({ift, {{attribute, Test}, Then, Else}, Line}, Data) ->
     case get_value(Test, Data, ift) of
