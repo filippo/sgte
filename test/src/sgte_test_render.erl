@@ -1,4 +1,4 @@
--module(sgte_test).
+-module(sgte_test_render).
 
 -export([test_string/0, test_string_err/0, test_include/0, test_apply/0]).
 -export([test_simpleif/0, test_fif/0, test_fif2/0, test_nested_fif/0, test_if/0]).

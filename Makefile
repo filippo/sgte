@@ -5,16 +5,21 @@ TAG_CMD = etags
 TAG_FLAGS = 
 
 #erlang compiler
-ERLC_CMD = /usr/bin/erlc
-ERL_CMD = /usr/bin/erl
+ERLC_CMD = /usr/local/bin/erlc
+ERL_CMD = /usr/local/bin/erl -boot start_clean
 
-LIB_FILES = /usr/lib/erlang/lib/sg*/*.erl /usr/lib/erlang/lib/sg*/src/*.erl
+TEST_PATH = -pa ebin test/ebin
 
-SRC_FILES = src/sgte.erl
-OBJ_FILES = ebin/sgte.beam
+LIB_FILES = /usr/local/lib/erlang/lib/sg*/*.erl /usr/local/lib/erlang/lib/sg*/src/*.erl
+
+SRC_FILES = src/sgte.erl src/sgte_render.erl src/sgte_parse.erl
+OBJ_FILES = ebin/sgte.beam ebin/sgte_render.beam ebin/sgte_parse.beam
 
 #test
-TEST_OBJS = test/ebin/sgte_test.beam test/ebin/run_tests.beam test/ebin/sgeunit.beam
+TEST_OBJS = test/ebin/sgte_test_compile.beam \
+		test/ebin/sgte_test_render.beam \
+		test/ebin/run_tests.beam \
+		test/ebin/sgeunit.beam
 
 TAG_FILES = $(LIB_FILES) $(SRC_FILES)
 
@@ -26,7 +31,7 @@ DOCDIR = doc
 all: compile
 
 test: unittest
-	$(ERL_CMD) -noshell -run run_tests -s init stop|grep \[ERROR\]
+	$(ERL_CMD) -noshell $(TEST_PATH) -run run_tests run_tests -s init stop
 
 docs: $(SRC_FILES)
 	erl -noshell -run edoc_run files ["'$<'"] \
@@ -34,7 +39,7 @@ docs: $(SRC_FILES)
 tags: src/*.erl
 	cd src/ && $(TAG_CMD) $(TAG_FLAGS) $(TAG_FILES)
 
-unittest: $(TEST_OBJS)
+unittest: compile $(TEST_OBJS)
 
 test/ebin/%.beam: test/src/%.erl
 	$(ERLC_CMD) -o test/$(EBIN_DIR) $<

@@ -1,4 +1,4 @@
--module(sgte_compile).
+-module(sgte_test_compile).
 
 -export([test_attr/0, test_attr_multiline/0]).
 -export([test_include/0, test_include_multiline/0]).
