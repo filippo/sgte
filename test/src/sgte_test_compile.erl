@@ -63,7 +63,7 @@ test_inline_map() ->
 
 
 test_join() ->
-    {ok, C} = sgte:compile("foo $join {separator} values$"),
+    {ok, C} = sgte:compile("foo $join:{separator} values$"),
     sgeunit:assert_equal(C, "foo " ++ [{join, {"separator", values}, 1}]).
 
 test_if() ->

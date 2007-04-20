@@ -159,9 +159,9 @@ test_imap2() ->
     Res = sgte:render(PrintMList, Data),
     Rendered = "<ul>\n"++
 	"<li class=\"listItem\"><b>Monte Bianco</b></li>\n"++
-	"<li class=\"listItem2\"><b>Cerro Torre</b></li>\n"++
+	"<li class=\"listItem\"><b>Cerro Torre</b></li>\n"++
 	"<li class=\"listItem\"><b>Mt. Everest</b></li>\n"++
-	"<li class=\"listItem2\"><b>Catinaccio</b></li>\n"++
+	"<li class=\"listItem\"><b>Catinaccio</b></li>\n"++
 	"</ul>",
     sgeunit:assert_equal(Res, Rendered).
 
@@ -217,13 +217,13 @@ simple_if() ->
 
 if_string() ->
     "Hello! $if testNames$" ++
-	"Some Mountains: $join \", \" nameList$" ++
+	"Some Mountains: $join:{, } nameList$" ++
         "$else$" ++
 	"$noName$$end if$" ++ " Bye Bye.".
 
 nested_if_string() ->
     "$if testNames$" ++
-	"Some Mountains: $if testNames$$join \", \" nameList$$end if$" ++
+	"Some Mountains: $if testNames$$join:{, } nameList$$end if$" ++
         "$else$" ++
 	"$noName$$end if$".
 
@@ -245,8 +245,8 @@ print_inline_mountains() ->
     "</ul>".
 print_inline_mountains2() ->
     "<ul>\n" ++
-	"$map:{<li class=\"$myClass$\"><b>$mountain$</b></li>,\n"++
-	"<li class=\"$myClass2$\"><b>$mountain$</b></li>\n} nameList$" ++
+	"$map:{<li class=\"$myClass$\"><b>$mountain$</b></li>\n"++
+	"} nameList$" ++
 	"</ul>".
 print_mmap() ->
     "<ul>" ++
@@ -267,10 +267,10 @@ tmpl_fun() ->
 
 
 imap_js() ->
-    "$map:{\"#$owner$\": function(t) {save_owner(\"$owner$\"\\,t.id);}\\, } owners$".
+    "$map:{\"#$owner$\": function(t) {save_owner(\"$owner$\",t.id);}, } owners$".
 
 imap_comma() ->
-    "$map:{$attr$\\, } attrList$".
+    "$map:{$attr$, } attrList$".
 
 %% Test Data
 data() ->
