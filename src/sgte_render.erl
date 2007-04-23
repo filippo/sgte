@@ -159,7 +159,6 @@ render_element({imap, {[TmplList], Term}, Line}, Data) ->
 	    render_error({error, X, {line, Line}});
 	ValueList ->
 	    [render(TmplList, Data, V) || V <- ValueList]
-%% 	    io:format("aaaaaa"),
 %% 	    % Zipped is a tuple list: [{tmpl1, val1}, {tmpl2, val2},{tmpl1, val3} ...]
 %% 	    Zipped = group(TmplList, ValueList), 
 %% 	    [render(CT, Data, V) || {CT, V} <- Zipped]
@@ -171,11 +170,10 @@ render_element({ift, {{attribute, Test}, Then, Else}, Line}, Data) ->
 	TestP ->
 	    case render_final(TestP, Data) of
 		true ->
-		    Res = render(Then, Data);
+		    render(Then, Data);
 		_ ->
-		    Res = render(Else, Data)
-	    end,
-	    Res
+		    render(Else, Data)
+	    end
     end;
 render_element({ift, {{attribute, Test}, Then}, Line}, Data) ->
     case get_value(Test, Data, ift) of

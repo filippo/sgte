@@ -186,8 +186,8 @@ collect_ift("$if "++Rest, Token, {Test}, Line) ->  %% Nested if
 	    case parse_ift(InnerIf) of
 		{error, Reason} -> 
 		    {error, Reason};
-		ParsedIf -> 
-		    collect_ift(Rest1,[ParsedIf, lists:reverse(Token)], {Test}, Line+LinesParsed)
+		{ift, ParsedIf} -> 
+		    collect_ift(Rest1,[{ift, ParsedIf, Line}, lists:reverse(Token)], {Test}, Line+LinesParsed)
 	    end;
 	{error, E} -> 
 	    {error, E}
