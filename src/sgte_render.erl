@@ -76,6 +76,8 @@ render_final(Term) when is_atom(Term) ->
     render_error({error, {Term, atom, invalid_data}});
 render_final(Term) when is_pid(Term) ->
     render_error({error, {Term, pid, invalid_data}});
+render_final(Term) when is_tuple(Term) ->
+    render_error({error, {Term, tuple, invalid_data}});
 render_final(Term) ->
     Term.
     
