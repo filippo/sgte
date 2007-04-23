@@ -18,6 +18,7 @@ OBJ_FILES = ebin/sgte.beam ebin/sgte_render.beam ebin/sgte_parse.beam
 #test
 TEST_OBJS = test/ebin/sgte_test_compile.beam \
 		test/ebin/sgte_test_render.beam \
+		test/ebin/sgte_test_map.beam \
 		test/ebin/run_tests.beam \
 		test/ebin/sgeunit.beam
 
