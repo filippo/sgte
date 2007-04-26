@@ -1,6 +1,6 @@
 -module(sgte_test_map).
 
--export([test_map/0, test_map_on_empty_list/0, test_mmap/0]).
+-export([test_map/0, test_mapl/0, test_map_on_empty_list/0, test_mmap/0]).
 -export([test_imap/0,test_imap2/0, test_imap_name_place/0]).
 -export([test_imap_js/0, test_imap_comma/0]).
 
@@ -18,6 +18,17 @@ test_map() ->
     Data = [{nameList, mountains()}, {printMountain, PrintM}],
     Res = sgte:render(PrintMList, Data),
     Rendered = "<ul><li><b>Monte Bianco</b></li><li><b>Cerro Torre</b></li><li><b>Mt. Everest</b></li><li><b>Catinaccio</b></li></ul>",
+    sgeunit:assert_equal(Res, Rendered).
+
+test_mapl() ->
+    {ok, RowTmpl} = sgte:compile("- $attr$\n"),
+    {ok, MapLTmpl} = sgte:compile("$mapl rowTmpl nameList$"),
+    Data = [{rowTmpl, RowTmpl}, {nameList, mountain_list()}],
+    Res = sgte:render(MapLTmpl, Data),
+    Rendered = "- Monte Bianco\n"
+	"- Cerro Torre\n"
+	"- Mt. Everest\n"
+	"- Catinaccio\n",
     sgeunit:assert_equal(Res, Rendered).
 
 test_map_on_empty_list() ->
@@ -146,6 +157,9 @@ empty() ->
 
 mountains() ->
     [{mountain, "Monte Bianco"}, {mountain, "Cerro Torre"}, {mountain, "Mt. Everest"}, {mountain, "Catinaccio"}].
+
+mountain_list() ->
+    ["Monte Bianco", "Cerro Torre", "Mt. Everest", "Catinaccio"].
 
 mountains2() ->
     [[{mountain, "Monte Bianco"}, {place, "Alps"}], 
