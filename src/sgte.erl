@@ -83,7 +83,7 @@
 -date("$Date$").
 
 %% API
--export([compile/1, compile_file/1, render/2, gettext/1, gettext_file/1]).
+-export([compile/1, compile_file/1, render/2, gettext/1]).
 
 %%yaws_tei is not in a public release yet -behaviour(yaws_tei).
 
@@ -153,14 +153,9 @@ render(Compiled, Data) ->
 
 %%--------------------------------------------------------------------
 %%--------------------------------------------------------------------
-gettext(T) when is_binary(T) ->
-    sgte_parse:gettext(binary_to_list(T));
-gettext(T) when is_list(T) ->
-    sgte_parse:gettext(T).
-
-%%--------------------------------------------------------------------
-%%--------------------------------------------------------------------
-gettext_file(FileName) ->
+gettext(Template) when is_binary(Template) ->
+    sgte_parse:gettext(binary_to_list(Template));
+gettext(FileName) ->
     case file:read_file(FileName) of
 	{ok, Bin} ->
 	    gettext(Bin);
