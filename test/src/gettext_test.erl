@@ -32,7 +32,7 @@ test_simple_it() ->
 test_simple_se() ->
     {ok, C} = sgte:compile(simple()),
     Res = sgte:render(C, [{gettext_lc, "se"}]),
-    sgeunit:assert_equal(Res, "Hej Värld").
+    sgeunit:assert_equal(Res, "Hej V\344rld").
 
 test_simple_en() ->
     {ok, C} = sgte:compile(simple()),
