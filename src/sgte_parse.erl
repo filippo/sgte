@@ -182,7 +182,7 @@ gettext(Template) ->
     gettext(Template, []).
 
 gettext([], Parsed) ->
-    {ok, lists:reverse(Parsed)};
+    lists:reverse(Parsed);
 gettext("$txt:"++T, Parsed) ->
     Rules = [fun can_be_blank/1, 
 	     parenthesis(fun is_open_bracket/1, fun is_close_bracket/1), 
