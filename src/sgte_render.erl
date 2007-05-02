@@ -161,9 +161,20 @@ render_element({imap, {[TmplList], Term}, Line}, Data) ->
 	    render_error({error, X, {line, Line}});
 	ValueList ->
 	    [render(TmplList, Data, V) || V <- ValueList]
-%% 	    % Zipped is a tuple list: [{tmpl1, val1}, {tmpl2, val2},{tmpl1, val3} ...]
-%% 	    Zipped = group(TmplList, ValueList), 
-%% 	    [render(CT, Data, V) || {CT, V} <- Zipped]
+    end;
+render_element({gettext, Key, Line}, Data) ->
+    case get_value(gettext_lc, Data, gettext) of
+	{error, X} ->
+	    render_error({error, X, {line, Line}});
+	LC ->
+	    try
+		gettext:key2str(Key, LC)
+	    catch
+		exit:{noproc, _X} ->
+		    render_error({error, {gettext, "server not started"}, {line, Line}});
+		  Err:Reason ->
+		    {Err, Reason}
+	    end
     end;
 render_element({ift, {{attribute, Test}, Then, Else}, Line}, Data) ->
     case get_value(Test, Data, ift) of
@@ -197,7 +208,10 @@ render_error({error, {TmplEl, Key, not_found}, {line, LineNo}}) ->
     io_lib:format("[SGTE Error: template: ~p - key ~p not found on line ~p]", [TmplEl, Key, LineNo]);
 %% Render an error in the data type format
 render_error({error, {Term, DataType, invalid_data}}) ->
-    io_lib:format("[SGTE Error: invalid data type: ~p is a ~p. String expected]", [Term, DataType]).
+    io_lib:format("[SGTE Error: invalid data type: ~p is a ~p. String expected]", [Term, DataType]);
+%% Render an ErrMsg passed as a string
+render_error({error, {TmplEl, ErrMsg}, {line, LineNo}}) when is_list(ErrMsg) ->
+    io_lib:format("[SGTE Error: ~p ~s on line ~p]", [TmplEl, ErrMsg, LineNo]).
 
 %%--------------------------------------------------------------------
 %% Utilities

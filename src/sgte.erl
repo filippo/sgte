@@ -83,7 +83,7 @@
 -date("$Date$").
 
 %% API
--export([compile/1, compile_file/1, render/2]).
+-export([compile/1, compile_file/1, render/2, gettext/1, gettext_file/1]).
 
 %%yaws_tei is not in a public release yet -behaviour(yaws_tei).
 
@@ -108,29 +108,8 @@
 compile(T) when is_binary(T) ->
     sgte_parse:parse(binary_to_list(T));
 compile(T) when is_list(T) ->
-    sgte_parse:parse(T);
-%%--------------------------------------------------------------------
-%% @doc Compiles the template file FileName and returns the compiled 
-%% template or an error.
-%% <pre>
-%% Expects:
-%%  {file, FileName} - The file containing the template.
-%%
-%% Types:
-%%  FileName = [char()]
-%%  Compiled = [char()|tuple()]
-%%  Reason = tuple()
-%% </pre>
-%% @spec compile({file, FileName}) -> {ok, Compiled} | {error,Reason}
-%% @end
-%%--------------------------------------------------------------------
-compile({file, FileName}) ->
-    case file:read_file(FileName) of
-	{ok, Bin} ->
-	    compile(Bin);
-	Err -> 
-	    Err
-    end.
+    sgte_parse:parse(T).
+
 %%--------------------------------------------------------------------
 %% @doc Compiles the template file FileName and returns the compiled 
 %% template or an error.
@@ -171,3 +150,20 @@ compile_file(FileName) ->
 %%--------------------------------------------------------------------
 render(Compiled, Data) ->
     sgte_render:render(Compiled, Data).
+
+%%--------------------------------------------------------------------
+%%--------------------------------------------------------------------
+gettext(T) when is_binary(T) ->
+    sgte_parse:gettext(binary_to_list(T));
+gettext(T) when is_list(T) ->
+    sgte_parse:gettext(T).
+
+%%--------------------------------------------------------------------
+%%--------------------------------------------------------------------
+gettext_file(FileName) ->
+    case file:read_file(FileName) of
+	{ok, Bin} ->
+	    gettext(Bin);
+	Err -> 
+	    Err
+    end.

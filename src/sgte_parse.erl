@@ -26,7 +26,7 @@
 -date("$Date$").
 
 %% API
--export([parse/1]).
+-export([parse/1, gettext/1]).
 
 %%====================================================================
 %% API
@@ -127,6 +127,19 @@ parse("$join:"++T, Parsed, Line) ->
  	{error, Reason} -> 
  	    {error, {imap, Reason, Line}}
     end;
+parse("$txt:"++T, Parsed, Line) ->
+    Rules = [fun can_be_blank/1, 
+	     parenthesis(fun is_open_bracket/1, fun is_close_bracket/1), 
+	     until(fun is_dollar/1)],
+    P = and_parser(Rules),    
+    case P(T) of
+ 	{ok, [Key, ''], LinesParsed, Rest} ->
+	    parse(Rest, [{gettext, Key, Line}|Parsed], Line+LinesParsed);
+ 	{ok, [_Key, Whatever], _LinesParsed, _Rest} ->
+ 	    {error, {gettext, {Whatever, not_allowed_here}, Line}};
+ 	{error, Reason} -> 
+ 	    {error, {gettext, Reason, Line}}
+    end;
 parse("$if "++T, Parsed, Line) ->
     %% if uses the code from the old version. See if it can be improved
     IfTmpl = collect_ift(T),
@@ -160,6 +173,31 @@ parse([H|T], Parsed, Line) ->
     {ok, H1, _L, T1} = simple([H|T]),
     parse(T1, [H1|Parsed], Line).
 
+
+%%--------------------------------------------------------------------
+%% Function: 
+%% Description:
+%%--------------------------------------------------------------------
+gettext(Template) ->
+    gettext(Template, []).
+
+gettext([], Parsed) ->
+    {ok, lists:reverse(Parsed)};
+gettext("$txt:"++T, Parsed) ->
+    Rules = [fun can_be_blank/1, 
+	     parenthesis(fun is_open_bracket/1, fun is_close_bracket/1), 
+	     until(fun is_dollar/1)],
+    P = and_parser(Rules),
+    case P(T) of
+ 	{ok, [Key, ''], _LinesParsed, Rest} ->
+	    gettext(Rest, [Key|Parsed]);
+ 	{ok, [_Key, Whatever], _LinesParsed, _Rest} ->
+ 	    {error, {gettext, {Whatever, not_allowed_here}}};
+ 	{error, Reason} -> 
+ 	    {error, {gettext, Reason}}
+    end;
+gettext([_H|T], Parsed) ->
+    gettext(T, Parsed).
    
 %%====================================================================
 %% Internal functions
