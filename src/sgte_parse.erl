@@ -26,7 +26,7 @@
 -date("$Date$").
 
 %% API
--export([parse/1, gettext/1]).
+-export([parse/1, gettext_strings/1]).
 
 %%====================================================================
 %% API
@@ -178,26 +178,30 @@ parse([H|T], Parsed, Line) ->
 %% Function: 
 %% Description:
 %%--------------------------------------------------------------------
-gettext(Template) ->
-    gettext(Template, []).
+gettext_strings(Template) ->
+    gettext_strings(Template, [], 1).
 
-gettext([], Parsed) ->
+gettext_strings([], Parsed, _L) ->
     lists:reverse(Parsed);
-gettext("$txt:"++T, Parsed) ->
+gettext_strings("$txt:"++T, Parsed, L) ->
     Rules = [fun can_be_blank/1, 
 	     parenthesis(fun is_open_bracket/1, fun is_close_bracket/1), 
 	     until(fun is_dollar/1)],
     P = and_parser(Rules),
     case P(T) of
- 	{ok, [Key, ''], _LinesParsed, Rest} ->
-	    gettext(Rest, [Key|Parsed]);
+ 	{ok, [Key, ''], LinesParsed, Rest} ->
+	    gettext_strings(Rest, [{Key, L}|Parsed], L+LinesParsed);
  	{ok, [_Key, Whatever], _LinesParsed, _Rest} ->
  	    {error, {gettext, {Whatever, not_allowed_here}}};
  	{error, Reason} -> 
  	    {error, {gettext, Reason}}
     end;
-gettext([_H|T], Parsed) ->
-    gettext(T, Parsed).
+gettext_strings([H|T], Parsed, L) when [H] == "\r" andalso hd(T) == "\n" ->
+    gettext_strings(tl(T), Parsed, L+1);
+gettext_strings([H|T], Parsed, L) when [H] == "\r" orelse [H] == "\n" ->
+    gettext_strings(T, Parsed, L+1);
+gettext_strings([_H|T], Parsed, L) ->
+    gettext_strings(T, Parsed, L).
    
 %%====================================================================
 %% Internal functions
