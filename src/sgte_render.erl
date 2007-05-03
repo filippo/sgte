@@ -141,6 +141,22 @@ render_element({mapl, {Tmpl, Term}, Line}, Data) ->
 	{CT, ValueList} ->
 	    [render(CT, Data, {attr, V}) || V <- ValueList]
     end;
+render_element({mapj, {Tmpl, Term, Separator}, Line}, Data) ->
+    case {get_value(Tmpl, Data, map), 
+	  get_value(Term, Data, mapj), 
+	  get_value(Separator, Data, mapj)} of
+	{{error, X}, _, _} ->
+	    render_error({error, X, {line, Line}});
+	{_, {error, X}, _} ->
+	    render_error({error, X, {line, Line}});
+	{_, _, {error, X}} ->
+	    render_error({error, X, {line, Line}});
+	{CT, ValueList, CSep} ->
+	    MappedVal = [render(CT, Data, V) || V <- ValueList],
+	    Concat = lists:flatten([X++CSep || X <- MappedVal]),
+	    Value = string:sub_string(Concat, 1, length(Concat)-length(CSep)),
+	    Value
+    end;
 render_element({mmap, {Tmpl, Term}, Line}, Data) ->
     case get_value(Term, Data, mmap) of
 	{error, X} ->

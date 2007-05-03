@@ -1,6 +1,6 @@
 -module(sgte_test_map).
 
--export([test_map/0, test_mapl/0, test_map_on_empty_list/0, test_mmap/0]).
+-export([test_map/0, test_mapl/0, test_map_on_empty_list/0, test_mmap/0, test_mapj/0]).
 -export([test_imap/0,test_imap2/0, test_imap_name_place/0]).
 -export([test_imap_js/0, test_imap_comma/0]).
 
@@ -29,6 +29,16 @@ test_mapl() ->
 	"- Cerro Torre\n"
 	"- Mt. Everest\n"
 	"- Catinaccio\n",
+    sgeunit:assert_equal(Res, Rendered).
+
+test_mapj() ->
+    {ok, RowTmpl} = sgte:compile("- $el$"),
+    {ok, Separator} = sgte:compile(", \n"),
+    {ok, MapJ} = sgte:compile("$mapj row values sep$"),
+    Data = [{row, RowTmpl}, {sep, Separator}, 
+	    {values, [{el, "foo"}, {el, "bar"}, {el, "baz"}]}],
+    Res = sgte:render(MapJ, Data),
+    Rendered = "- foo, \n- bar, \n- baz",
     sgeunit:assert_equal(Res, Rendered).
 
 test_map_on_empty_list() ->
