@@ -21,10 +21,6 @@
 %%%-------------------------------------------------------------------
 -module(sgte_parse).
 
--author("$Author$").
--version("$Rev$").
--date("$Date$").
-
 %% API
 -export([parse/1, gettext_strings/1]).
 

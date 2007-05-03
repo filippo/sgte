@@ -78,10 +78,6 @@
 %%%-------------------------------------------------------------------
 -module(sgte).
 
--author("$Author$").
--version("$Rev$").
--date("$Date$").
-
 %% API
 -export([compile/1, compile_file/1, render/2, gettext_strings/1]).
 
