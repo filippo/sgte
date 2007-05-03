@@ -15,8 +15,8 @@ setup_test() ->
     gettext_server:start(),
     {_, SeBin} = file:read_file("../priv/gettext_test/swedish.po"),
     {_, ItBin} = file:read_file("../priv/gettext_test/italian.po"),
-    ok = gettext_server:store_pofile("se", SeBin),
-    ok = gettext_server:store_pofile("it", ItBin).
+    ok = gettext:store_pofile("se", SeBin),
+    ok = gettext:store_pofile("it", ItBin).
 
 %% Test Compile
 test_compile() ->
