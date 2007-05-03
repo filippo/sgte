@@ -167,14 +167,10 @@ render_element({gettext, Key, Line}, Data) ->
 	{error, X} ->
 	    render_error({error, X, {line, Line}});
 	LC ->
-	    try
-		gettext:key2str(Key, LC)
-	    catch
-		exit:{noproc, _X} ->
-		    render_error({error, {gettext, "server not started"}, {line, Line}});
-		  Err:Reason ->
-		    {Err, Reason}
-	    end
+	    case catch gettext:key2str(Key, LC) of
+		Translation when list(Translation) -> Translation;
+		_ -> Key
+	    end 
     end;
 render_element({ift, {{attribute, Test}, Then, Else}, Line}, Data) ->
     case get_value(Test, Data, ift) of
