@@ -17,8 +17,9 @@
 %%% 2006 S.G. Consulting srl. All Rights Reserved.
 %%%
 %%% Description :
-%%% @doc <p>The <em>SGTE</em> module is a library implementing a Template Engine
-%%% The template system is inspired on <a href="http://www.stringtemplate.org" target="_blank">String Template</a>
+%%% @doc 
+%%% <p>The <em>SGTE</em> module is a library implementing a Template Engine
+%%% The template system is inspired on <a href="http://www.stringtemplate.org">String Template</a>
 %%% </p><p>
 %%% The use of the Engige is as simple as (from the command line):
 %%% <pre>
@@ -28,7 +29,6 @@
 %%% > {ok, Compiled} = sgte:compile_file(FileName),
 %%% > sgte:render(Compiled, Data).
 %%% </pre>
-%%% Where Template can be either a string or a tuple {file, FileName}
 %%% Data can be a Dict or a list of tuple (e.g. [{attr1, Val1}, {attr2, Val2}])
 %%% Values can be a simple value or a function/1. In this case the function is 
 %%% called with Data as an argument.
@@ -87,18 +87,14 @@
 %% API
 %%====================================================================
 %%--------------------------------------------------------------------
+%% @spec compile(T::template()) -> {ok, C::compiled_tmpl()} | {error,Reason}
+%%
+%%   @type template() = string() | binary(). Template to compile (string or binary)
+%%   @type compiled_tmpl() = [char()|token()]
+%%          token() = tupe().
+%%
 %% @doc Compiles the template string T and returns the compiled 
 %% template or an error.
-%% <pre>
-%% Expects:
-%%  T - The string containing the template.
-%%
-%% Types:
-%%  T = [char()]
-%%  Compiled = [char()|tuple()]
-%%  Reason = tuple()
-%% </pre>
-%% @spec compile(T) -> {ok, Compiled} | {error,Reason}
 %% @end
 %%--------------------------------------------------------------------
 compile(T) when is_binary(T) ->
@@ -107,18 +103,10 @@ compile(T) when is_list(T) ->
     sgte_parse:parse(T).
 
 %%--------------------------------------------------------------------
+%% @spec compile_file(FileName) -> {ok, C::compiled_tmpl()} | {error,Reason}
+%%
 %% @doc Compiles the template file FileName and returns the compiled 
 %% template or an error.
-%% <pre>
-%% Expects:
-%%  FileName - The file containing the template.
-%%
-%% Types:
-%%  FileName = [char()]
-%%  Compiled = [char()|tuple()]
-%%  Reason = tuple()
-%% </pre>
-%% @spec compile_file(FileName) -> {ok, Compiled} | {error,Reason}
 %% @end
 %%--------------------------------------------------------------------
 compile_file(FileName) ->
@@ -130,24 +118,26 @@ compile_file(FileName) ->
     end.
 
 %%--------------------------------------------------------------------
-%% @doc Renders the compiled template and returns it
-%% <pre>
-%% Expects:
-%%  Compiled - The compiled template.
-%%  Data - The data referred in the template
+%% @spec render(C::compiled_tmpl(), Data::tmpl_data()) -> string()
 %%
-%% Types:
-%%  Compiled = [char()|tuple()]
-%%  Data = [tuple()]|dict()
-%%  Rendered = [char()]
-%% </pre>
-%% @spec render(Compiled, Data) -> Rendered
+%% @type tmpl_data() = [tuple()]|dict()
+%%
+%% @doc Renders the compiled template.
 %% @end
 %%--------------------------------------------------------------------
 render(Compiled, Data) ->
     sgte_render:render(Compiled, Data).
 
 %%--------------------------------------------------------------------
+%% @spec gettext_strings(T::template()) -> [gettext_tuple()]
+%%
+%% @type gettext_tuple() = {Key, LineNo}
+%%
+%% @doc Extracts from template T the list of gettext keys 
+%% with associated line numbers.
+%% This is a utility function to use in cojunction with gettext
+%% to create initial .po files.
+%% @end
 %%--------------------------------------------------------------------
 gettext_strings(Template) when is_binary(Template) ->
     sgte_parse:gettext_strings(binary_to_list(Template));
