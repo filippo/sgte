@@ -1,7 +1,8 @@
 -module(sgte_test_render).
 
 -export([test_string/0, test_string_err/0, test_include/0, test_apply/0]).
--export([test_simpleif/0, test_fif/0, test_fif2/0, test_nested_fif/0, test_if/0]).
+-export([test_simpleif/0, test_simpleif_no_test/0]).
+-export([test_fif/0, test_fif2/0, test_nested_fif/0, test_if/0]).
 -export([test_fun/0, test_file/0]).
 
 
@@ -53,6 +54,11 @@ test_simpleif() ->
     RElse = sgte:render(C, DElse),
     [sgeunit:assert_equal(RThen, "Start then branch"),
      sgeunit:assert_equal(RElse, "Start else branch")].
+
+test_simpleif_no_test() ->
+    {ok, C} = sgte:compile(simple_if()),
+    RElse = sgte:render(C, []),
+    sgeunit:assert_equal(RElse, "Start else branch").
 
 test_if() ->
     {ok, Compiled} = sgte:compile(if_string()),
