@@ -2,7 +2,11 @@
 
 -export([setup_test/0]).
 -export([test_compile/0]).
--export([test_simple_it/0, test_simple_se/0, test_simple_en/0, test_simple_undef/0]).
+-export([test_simple_it/0, 
+	 test_simple_se/0, 
+	 test_simple_en/0, 
+	 test_simple_undef/0, 
+	 test_no_lc/0]).
 
 %%--------------------
 %%
@@ -47,6 +51,12 @@ test_simple_en() ->
 test_simple_undef() ->
     {ok, C} = sgte:compile(simple()),
     Res = sgte:render(C, [{gettext_lc, "aa"}]),
+    sgeunit:assert_equal("Hello World", Res).
+
+%% No language code passed
+test_no_lc() ->
+    {ok, C} = sgte:compile(simple()),
+    Res = sgte:render(C, []),
     sgeunit:assert_equal("Hello World", Res).
 
 %%--------------------
