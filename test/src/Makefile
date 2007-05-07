@@ -6,6 +6,7 @@ TEST_PATH = -pa ../../ebin ../ebin
 EBIN_FILES = ../ebin/sgte_test_compile.beam \
 		../ebin/sgte_test_render.beam \
 		../ebin/sgte_test_map.beam \
+		../ebin/sgte_test_strict.beam \
 		../ebin/gettext_test.beam \
 		../ebin/sgeunit.beam \
 		../ebin/run_tests.beam

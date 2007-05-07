@@ -35,17 +35,17 @@ test_compile() ->
 %% Test Render
 test_simple_it() ->
     {ok, C} = sgte:compile(simple()),
-    Res = sgte:render(C, [{gettext_lc, "it"}]),
+    Res = sgte:render(C, [], [{gettext_lc, "it"}]),
     sgeunit:assert_equal("Ciao Mondo", Res).
 
 test_simple_se() ->
     {ok, C} = sgte:compile(simple()),
-    Res = sgte:render(C, [{gettext_lc, "se"}]),
+    Res = sgte:render(C, [], [{gettext_lc, "se"}]),
     sgeunit:assert_equal("Hej V\344rld", Res).
 
 test_simple_en() ->
     {ok, C} = sgte:compile(simple()),
-    Res = sgte:render(C, [{gettext_lc, "en"}]),
+    Res = sgte:render(C, [], [{gettext_lc, "en"}]),
     sgeunit:assert_equal("Hello World", Res).
 
 test_simple_undef() ->

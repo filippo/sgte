@@ -1,6 +1,6 @@
--module(sgte_test_render).
+-module(sgte_test_strict).
 
--export([test_string/0, test_string_err/0, test_include/0, test_apply/0]).
+-export([test_string/0, test_include/0, test_apply/0]).
 -export([test_simpleif/0, test_simpleif_no_test/0]).
 -export([test_fif/0, test_fif2/0, test_nested_fif/0, test_if/0]).
 -export([test_fun/0, test_file/0]).
@@ -16,28 +16,26 @@
 %%
 test_string() ->
     Str = "This is a test:\n" ++
-	"$testFun()$ followed by $testData$ and unicode characters  àèìòù",
-    {ok, Compiled} = sgte:compile(Str),
-    Res = sgte:render(Compiled, data()),
-    ResultStr = "This is a test:\n" ++
-	"foo, bar, baz followed by my test data with unicode characters: àèìòù and unicode characters  àèìòù",
-    sgeunit:assert_equal(Res, ResultStr).
-
-test_string_err() ->
-    Str = "This is a test:\n" ++
 	"$testFun()$ followed by $testData$ and unicode chars àèìòù",
     {ok, Compiled} = sgte:compile(Str),
-    Res = sgte:render(Compiled, [], [strict]),
-    ResultStr = "This is a test:\n" ++
+    Res1 = sgte:render(Compiled, [], [strict]),
+    Res2 = sgte:render(Compiled, [], []),
+    ResultStr1 = "This is a test:\n" ++
 	"[SGTE Error: template: attribute - key 'testFun()' not found on line 2] followed by [SGTE Error: template: attribute - key testData not found on line 2] and unicode chars àèìòù",
-    sgeunit:assert_equal(Res, ResultStr).
+    ResultStr2 = "This is a test:\n" ++
+	" followed by  and unicode chars àèìòù",
+    [sgeunit:assert_equal(Res1, ResultStr1), 
+     sgeunit:assert_equal(Res2, ResultStr2)].
 
 test_include() ->
     {ok, C1} = sgte:compile("bar"),
     {ok, C2} = sgte:compile("foo $include tmpl$ baz"),
-    Res = sgte:render(C2, [{tmpl, C1}]),
-    ResultStr = "foo bar baz",
-    sgeunit:assert_equal(Res, ResultStr).
+    Res1 = sgte:render(C2, []),
+    Res2 = sgte:render(C2, [], [strict]),
+    ResultStr1 = "foo  baz",
+    ResultStr2 = "foo [SGTE Error: template: include - key tmpl not found on line 1] baz",
+    [sgeunit:assert_equal(Res1, ResultStr1),
+     sgeunit:assert_equal(Res2, ResultStr2)].
 
 test_apply() ->
     F = fun(L) -> lists:nth(2, L) end,
@@ -50,15 +48,15 @@ test_simpleif() ->
     {ok, C} = sgte:compile(simple_if()),
     DThen = [{test, true}],
     DElse = [{test, false}],
-    RThen = sgte:render(C, DThen),
-    RElse = sgte:render(C, DElse),
+    RThen = sgte:render(C, DThen, [strict]),
+    RElse = sgte:render(C, DElse, [strict]),
     [sgeunit:assert_equal(RThen, "Start then branch"),
      sgeunit:assert_equal(RElse, "Start else branch")].
 
 test_simpleif_no_test() ->
     {ok, C} = sgte:compile(simple_if()),
-    RElse = sgte:render(C, []),
-    sgeunit:assert_equal(RElse, "Start else branch").
+    RElse = sgte:render(C, [], [strict]),
+    sgeunit:assert_equal(RElse, "Start [SGTE Error: template: ift - key test not found on line 1]").
 
 test_if() ->
     {ok, Compiled} = sgte:compile(if_string()),
@@ -153,10 +151,5 @@ tmpl_fun() ->
 
 
 %% Test Data
-data() ->
-    D1 = dict:new(),
-    D2 = dict:store('testFun()', "foo, bar, baz", D1),
-    dict:store('testData', "my test data with unicode characters: àèìòù", D2).
-
 mountainList() ->
     ["Monte Bianco", "Cerro Torre", "Mt. Everest", "Catinaccio"].

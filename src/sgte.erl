@@ -79,7 +79,7 @@
 -module(sgte).
 
 %% API
--export([compile/1, compile_file/1, render/2, gettext_strings/1]).
+-export([compile/1, compile_file/1, render/2, render/3, gettext_strings/1]).
 
 %%yaws_tei is not in a public release yet -behaviour(yaws_tei).
 
@@ -116,6 +116,21 @@ compile_file(FileName) ->
 	Err -> 
 	    Err
     end.
+
+%%--------------------------------------------------------------------
+%% @spec render(C::compiled_tmpl(), 
+%%              Data::tmpl_data(), 
+%%              Options::options()) -> string()
+%%
+%% @type tmpl_data() = [tuple()]|dict()
+%% @type options() = [options()]
+%%       option()  = strict|{gettext_lc, string()}.
+%%
+%% @doc Renders the compiled template.
+%% @end
+%%--------------------------------------------------------------------
+render(Compiled, Data, Options) ->
+    sgte_render:render(Compiled, Data, Options).
 
 %%--------------------------------------------------------------------
 %% @spec render(C::compiled_tmpl(), Data::tmpl_data()) -> string()

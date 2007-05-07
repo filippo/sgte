@@ -21,7 +21,15 @@
 %%%-------------------------------------------------------------------
 -module(sgte_render).
 
--export([render/2]).
+-export([render/2, render/3]).
+
+%%--------------------------------------------------------------------
+%% @doc Calls render/2 passing options in the data.
+%% @spec render(Compiled, Data, Options) -> Rendered
+%% @end
+%%--------------------------------------------------------------------
+render(Compiled, Data, Options) ->
+    render(Compiled, [{options, Options}|Data]).
 
 %%--------------------------------------------------------------------
 %% @doc Renders the compiled template and returns it
@@ -46,13 +54,13 @@ render(Compiled, Data) ->
     lists:flatten([render_element(X, Data) || X <- Compiled]).
 
 %% used for map Attr is a tuple {Key, Value}
-render(Compiled, Data, Attr) when is_list(Attr) ->
+render1(Compiled, Data, Attr) when is_list(Attr) ->
     Data1 = dict:merge(fun(_K, _V1, V2) -> V2 end, Data, dict:from_list(Attr)),
     lists:flatten([render_element(X, Data1) || X <- Compiled]);
-render(Compiled, Data, Attr) when is_function(Compiled) ->
+render1(Compiled, Data, Attr) when is_function(Compiled) ->
     {K, V} = Attr,
     render_final(Compiled, dict:store(K, V, Data));
-render(Compiled, Data, Attr) ->
+render1(Compiled, Data, Attr) ->
     {K, V} = Attr,
     Data1 = dict:store(K, V, Data),
     lists:flatten([render_element(X, Data1) || X <- Compiled]).
@@ -88,7 +96,12 @@ render_final(Term) ->
 render_element({attribute, Term, Line}, Data) ->
     case get_value(Term, Data, attribute) of
 	{error, X} ->
-	    render_error({error, X, {line, Line}});
+	    case is_strict(options(Data)) of
+		true ->
+		    render_error({error, X, {line, Line}});
+		false ->
+		    []
+	    end;
 	Value ->
 	    render_final(Value, Data)
     end;
@@ -105,7 +118,12 @@ render_element({join, {Separator, Term}, Line}, Data) ->
 render_element({include, Tmpl, Line}, Data) -> %% include template passing all data
     case get_value(Tmpl, Data, include) of
 	{error, X} ->
-	    render_error({error, X, {line, Line}});
+	    case is_strict(options(Data)) of
+		true ->
+		    render_error({error, X, {line, Line}});
+		false ->
+		    []
+	    end;
 	Compiled ->
 	    render(Compiled, Data)
     end;
@@ -130,7 +148,7 @@ render_element({map, {Tmpl, Term}, Line}, Data) ->
 	{_, {error, X}} ->
 	    render_error({error, X, {line, Line}});
 	{CT, ValueList} ->
-	    [render(CT, Data, V) || V <- ValueList]
+	    [render1(CT, Data, V) || V <- ValueList]
     end;
 render_element({mapl, {Tmpl, Term}, Line}, Data) ->
     case {get_value(Tmpl, Data, mapl), get_value(Term, Data, mapl)} of
@@ -139,7 +157,7 @@ render_element({mapl, {Tmpl, Term}, Line}, Data) ->
 	{_, {error, X}} ->
 	    render_error({error, X, {line, Line}});
 	{CT, ValueList} ->
-	    [render(CT, Data, {attr, V}) || V <- ValueList]
+	    [render1(CT, Data, {attr, V}) || V <- ValueList]
     end;
 render_element({mapj, {Tmpl, Term, Separator}, Line}, Data) ->
     case {get_value(Tmpl, Data, map), 
@@ -152,7 +170,7 @@ render_element({mapj, {Tmpl, Term, Separator}, Line}, Data) ->
 	{_, _, {error, X}} ->
 	    render_error({error, X, {line, Line}});
 	{CT, ValueList, CSep} ->
-	    MappedVal = [render(CT, Data, V) || V <- ValueList],
+	    MappedVal = [render1(CT, Data, V) || V <- ValueList],
 	    Concat = lists:flatten([X++CSep || X <- MappedVal]),
 	    Value = string:sub_string(Concat, 1, length(Concat)-length(CSep)),
 	    Value
@@ -169,29 +187,39 @@ render_element({mmap, {Tmpl, Term}, Line}, Data) ->
 	    CompiledList = lists:reverse(lists:foldl(ExtractTmpl, [], Tmpl)),
 	    % Zipped is a tuple list: [{tmpl1, val1}, {tmpl2, val2},{tmpl1, val3} ...]
 	    Zipped = group(CompiledList, ValueList), 
-	    [render(CT, Data, V) || {CT, V} <- Zipped]
+	    [render1(CT, Data, V) || {CT, V} <- Zipped]
     end;
 render_element({imap, {[TmplList], Term}, Line}, Data) ->
     case get_value(Term, Data, imap) of
 	{error, X} ->
 	    render_error({error, X, {line, Line}});
 	ValueList ->
-	    [render(TmplList, Data, V) || V <- ValueList]
+	    [render1(TmplList, Data, V) || V <- ValueList]
     end;
-render_element({gettext, Key, _Line}, Data) ->
-    case get_value(gettext_lc, Data, gettext) of
-	{error, _X} ->
-	    Key;
+render_element({gettext, Key, Line}, Data) ->
+    case gettext_lc(options(Data)) of
+	{error, X} ->
+	    case is_strict(options(Data)) of
+		true ->
+		    render_error({error, X, {line, Line}});
+		false ->
+		    Key % gettext_lc not found
+	    end;
 	LC ->
 	    case catch gettext:key2str(Key, LC) of
 		Translation when list(Translation) -> Translation;
 		_ -> Key
 	    end 
     end;
-render_element({ift, {{attribute, Test}, Then, Else}, _Line}, Data) ->
+render_element({ift, {{attribute, Test}, Then, Else}, Line}, Data) ->
     case get_value(Test, Data, ift) of
-	{error, _X} ->
-	    render(Else, Data); % test not found -> false
+	{error, X} ->
+	    case is_strict(options(Data)) of
+		true ->
+		    render_error({error, X, {line, Line}});
+		false ->
+		    render(Else, Data) % test not found -> false
+	    end;
 	TestP ->
 	    case render_final(TestP, Data) of
 		true ->
@@ -200,10 +228,15 @@ render_element({ift, {{attribute, Test}, Then, Else}, _Line}, Data) ->
 		    render(Else, Data)
 	    end
     end;
-render_element({ift, {{attribute, Test}, Then}, _Line}, Data) ->
+render_element({ift, {{attribute, Test}, Then}, Line}, Data) ->
     case get_value(Test, Data, ift) of
-	{error, _X} ->
-	    []; % test not found -> false
+	{error, X} ->
+	    case is_strict(options(Data)) of
+		true ->
+		    render_error({error, X, {line, Line}});
+		false ->
+		    [] % test not found -> false
+	    end;
 	TestP ->
 	    case render_final(TestP, Data) of
 		true ->
@@ -252,3 +285,23 @@ group([], [H2|R2], Recurring, Result) ->
     group(Recurring, [H2|R2], Recurring, Result);
 group([H1|R1], [H2|R2], Recurring, Result) ->
     group(R1, R2, Recurring, [{H1, H2}|Result]).
+
+options(Data) ->
+    case dict:find(options, Data) of
+	{ok, Options} ->
+	    Options;
+	_ ->
+	    []
+    end.
+
+
+is_strict(Options) ->
+    lists:member(strict, Options).
+
+gettext_lc(Options) ->    
+    case lists:keysearch(gettext_lc, 1, Options) of 
+	{value, {gettext_lc, LC}} ->
+	    LC;
+	false ->
+	    {error, {gettext, gettext_lc, not_found}}
+    end.
