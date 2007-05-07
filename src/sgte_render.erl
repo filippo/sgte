@@ -178,9 +178,9 @@ render_element({imap, {[TmplList], Term}, Line}, Data) ->
 	ValueList ->
 	    [render(TmplList, Data, V) || V <- ValueList]
     end;
-render_element({gettext, Key, Line}, Data) ->
+render_element({gettext, Key, _Line}, Data) ->
     case get_value(gettext_lc, Data, gettext) of
-	{error, X} ->
+	{error, _X} ->
 	    Key;
 	LC ->
 	    case catch gettext:key2str(Key, LC) of
@@ -188,9 +188,9 @@ render_element({gettext, Key, Line}, Data) ->
 		_ -> Key
 	    end 
     end;
-render_element({ift, {{attribute, Test}, Then, Else}, Line}, Data) ->
+render_element({ift, {{attribute, Test}, Then, Else}, _Line}, Data) ->
     case get_value(Test, Data, ift) of
-	{error, X} ->
+	{error, _X} ->
 	    render(Else, Data); % test not found -> false
 	TestP ->
 	    case render_final(TestP, Data) of
@@ -200,9 +200,9 @@ render_element({ift, {{attribute, Test}, Then, Else}, Line}, Data) ->
 		    render(Else, Data)
 	    end
     end;
-render_element({ift, {{attribute, Test}, Then}, Line}, Data) ->
+render_element({ift, {{attribute, Test}, Then}, _Line}, Data) ->
     case get_value(Test, Data, ift) of
-	{error, X} ->
+	{error, _X} ->
 	    []; % test not found -> false
 	TestP ->
 	    case render_final(TestP, Data) of
