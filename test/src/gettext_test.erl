@@ -23,7 +23,7 @@ setup_test() ->
 	ok = gettext:store_pofile("se", SeBin),
 	ok = gettext:store_pofile("it", ItBin)
     catch
-	Err:Reason ->
+	_Err:_Reason ->
 	    error
     end.
 
