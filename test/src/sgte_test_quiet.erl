@@ -1,4 +1,4 @@
--module(sgte_test_strict).
+-module(sgte_test_quiet).
 
 -export([test_string/0, test_include/0, test_apply/0]).
 -export([test_simpleif/0, test_simpleif_no_test/0]).
