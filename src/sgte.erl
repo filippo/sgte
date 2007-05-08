@@ -16,7 +16,6 @@
 %%% srl. Portions created by S.G. Consulting s.r.l. are Copyright (C)
 %%% 2006 S.G. Consulting srl. All Rights Reserved.
 %%%
-%%% Description :
 %%% @doc 
 %%% <p>The <em>SGTE</em> module is a library implementing a Template Engine
 %%% The template system is inspired on <a href="http://www.stringtemplate.org">String Template</a>
@@ -87,10 +86,10 @@
 %% API
 %%====================================================================
 %%--------------------------------------------------------------------
-%% @spec compile(T::template()) -> {ok, C::compiled_tmpl()} | {error,Reason}
+%% @spec compile(T::template()) -> {ok, C::compiled()} | {error,Reason}
 %%
 %%   @type template() = string() | binary(). Template to compile (string or binary)
-%%   @type compiled_tmpl() = [char()|token()]
+%%   @type compiled() = [char()|token()]
 %%          token() = tupe().
 %%
 %% @doc Compiles the template string T and returns the compiled 
@@ -103,7 +102,7 @@ compile(T) when is_list(T) ->
     sgte_parse:parse(T).
 
 %%--------------------------------------------------------------------
-%% @spec compile_file(FileName) -> {ok, C::compiled_tmpl()} | {error,Reason}
+%% @spec compile_file(FileName) -> {ok, C::compiled()} | {error,Reason}
 %%
 %% @doc Compiles the template file FileName and returns the compiled 
 %% template or an error.
@@ -118,13 +117,13 @@ compile_file(FileName) ->
     end.
 
 %%--------------------------------------------------------------------
-%% @spec render(C::compiled_tmpl(), 
-%%              Data::tmpl_data(), 
+%% @spec render(C::compiled(), 
+%%              Data::data(), 
 %%              Options::options()) -> string()
 %%
-%% @type tmpl_data() = [tuple()]|dict()
+%% @type data() = [tuple()]|dict()
 %% @type options() = [options()]
-%%       option()  = strict|{gettext_lc, string()}.
+%%       option()  = quiet|{gettext_lc, string()}.
 %%
 %% @doc Renders the compiled template.
 %% @end
@@ -133,9 +132,7 @@ render(Compiled, Data, Options) ->
     sgte_render:render(Compiled, Data, Options).
 
 %%--------------------------------------------------------------------
-%% @spec render(C::compiled_tmpl(), Data::tmpl_data()) -> string()
-%%
-%% @type tmpl_data() = [tuple()]|dict()
+%% @spec render(C::compiled(), Data::data()) -> string()
 %%
 %% @doc Renders the compiled template.
 %% @end

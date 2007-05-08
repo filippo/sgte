@@ -15,7 +15,10 @@
 %%% srl. Portions created by S.G. Consulting s.r.l. are Copyright (C)
 %%% 2007 S.G. Consulting srl. All Rights Reserved.
 %%%
-%%% Description : 
+%%% Description : Parses a template file or string and returns the
+%%% compiled template.
+%%%
+%%% @private
 %%%
 %%% Created : 25 Mar 2007 by filippo pacini <pacini@sgconsulting.it>
 %%%-------------------------------------------------------------------
@@ -28,8 +31,15 @@
 %% API
 %%====================================================================
 %%--------------------------------------------------------------------
-%% Function: 
-%% Description:
+%% @spec parse(T::template()) -> {ok, C::compiled()} | {error,Reason}
+%%
+%%   @type template() = string() | binary(). Template to parse
+%%   @type compiled() = [char()|token()]
+%%          token() = tupe().
+%%
+%% @doc Parse the template string T and returns the compiled 
+%% template or an error.
+%% @end
 %%--------------------------------------------------------------------
 parse(Template) ->
     parse(Template, [], 1).
@@ -171,8 +181,15 @@ parse([H|T], Parsed, Line) ->
 
 
 %%--------------------------------------------------------------------
-%% Function: 
-%% Description:
+%% @spec gettext_strings(T::template()) -> [gettext_tuple()]
+%%
+%% @type gettext_tuple() = {Key, LineNo}
+%%
+%% @doc Extracts from template T the list of gettext keys 
+%% with associated line numbers.
+%% This is a utility function to use in cojunction with gettext
+%% to create initial .po files.
+%% @end
 %%--------------------------------------------------------------------
 gettext_strings(Template) ->
     gettext_strings(Template, [], 1).
@@ -202,7 +219,12 @@ gettext_strings([_H|T], Parsed, L) ->
 %%====================================================================
 %% Internal functions
 %%====================================================================     
-%% collect if token till $end if$
+%%--------------------------------------------------------------------
+%% @spec collect_ift(T::template()) -> if_token()
+%%
+%% @doc collect if token untill $end if$ is found
+%% @end
+%%--------------------------------------------------------------------
 collect_ift(Tmpl) ->
     collect_ift(Tmpl, [], {}, 0).
 
@@ -239,8 +261,12 @@ collect_ift([H|Rest], Token, T, Line) when [H] == "\r" orelse [H] == "\n" ->
 collect_ift([H|Rest], Token, T, Line) ->
     collect_ift(Rest, [H|Token], T, Line).
 
-
-%% if token parser
+%%--------------------------------------------------------------------
+%% @spec parse_ift({Test, Then, Else}) -> if_token()
+%%
+%% @doc if token parser
+%% @end
+%%--------------------------------------------------------------------
 parse_ift({Test, Then, Else}) ->
     case {parse(Then), parse(Else)} of
 	{{error, Reason1}, _} -> {error, Reason1};
@@ -251,6 +277,12 @@ parse_ift({Test, Then, Else}) ->
 	      CThen, CElse}
 	    }
     end;
+%%--------------------------------------------------------------------
+%% @spec parse_ift({Test, Then}) -> if_token()
+%%
+%% @doc if token parser
+%% @end
+%%--------------------------------------------------------------------
 parse_ift({Test, Then}) ->
     case parse(Then) of
 	{error, Reason} -> {error, Reason};
@@ -258,7 +290,18 @@ parse_ift({Test, Then}) ->
 	    {ift, {{attribute, list_to_atom(string:strip(Test))}, CThen}}
     end.
 
-%% And parser of Rules
+%%--------------------------------------------------------------------
+%% @spec and_parser(Rules::rules()) -> parsed()|{error, Reason}
+%%
+%% @type rules() = [rule()]
+%%       rule()  = fun(template()).
+%% @type parsed() = {ok, token(), Line::int(), Remaining::template()}
+%%
+%% @doc and_parser of Rules. 
+%% Applies each Rule in sequence to the Template passed. 
+%% If a rule fails returns an error.
+%% @end
+%%--------------------------------------------------------------------
 and_parser(Rules) ->
     fun(Tmpl) ->
 	    and_parser(Rules, Tmpl, [], 0)
@@ -275,29 +318,27 @@ and_parser([Rule|T], Tmpl, SoFar, Line) ->
 	    and_parser(T, Rest, [Tok|SoFar], Line+LinesParsed)
     end.
 
-%% %% Or parser of Rules
-%% or_parser(Rules) ->
-%%     fun(Tmpl) ->
-%% 	    or_parser(Rules, Tmpl)
-%%     end.
-%% or_parser([], _Tmpl) ->
-%%     {error, no_matching_rule};
-%% or_parser([Rule|T], Tmpl) ->
-%%     case Rule(Tmpl) of
-%% 	{error, _Reason} -> %% check next rule
-%% 	    or_parser(T, Tmpl);
-%% 	{ok, Tok, Rest} -> %match -> return the result
-%% 	    {ok, Tok, Rest}
-%%     end.
 
 %%
-%% Rules
+%% Parser Rules
 %%
-% simple: output whatever it gets in input
+
+%%--------------------------------------------------------------------
+%% @spec simple(template()) -> parsed()|{error, Reason}
+%%
+%% @doc output whatever it gets in input. 
+%% @end
+%%--------------------------------------------------------------------
 simple([H|T]) ->
     {ok, H, 0, T}.
 
-% strip blanks if found.
+%%--------------------------------------------------------------------
+%% @spec can_be_blank(template()) -> parsed()|{error, Reason}
+%%
+%% @doc Check for blank characters at the beginning of template()
+%% and removes them if found.
+%% @end
+%%--------------------------------------------------------------------
 can_be_blank([H|T]) ->
     case is_blank(H) of
 	true ->
@@ -305,7 +346,13 @@ can_be_blank([H|T]) ->
 	_ ->
 	    {ok, [H|T], 0}
     end.
-% strip blanks from Tmpl.
+%%--------------------------------------------------------------------
+%% @spec strip_blank(template()) -> parsed()|{error, Reason}
+%%
+%% @doc removes blank characters at the beginning of template().
+%% If no blank is found returns an error.
+%% @end
+%%--------------------------------------------------------------------
 strip_blank([H|T]) ->
     case is_blank(H) of
 	true ->
