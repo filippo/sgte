@@ -27,9 +27,9 @@ test_string_err() ->
     Str = "This is a test:\n" ++
 	"$testFun()$ followed by $testData$ and unicode chars àèìòù",
     {ok, Compiled} = sgte:compile(Str),
-    Res = sgte:render(Compiled, [], [strict]),
+    Res = sgte:render(Compiled, []),
     ResultStr = "This is a test:\n" ++
-	"[SGTE Error: template: attribute - key 'testFun()' not found on line 2] followed by [SGTE Error: template: attribute - key testData not found on line 2] and unicode chars àèìòù",
+	"[SGTE Warning: template: attribute - key 'testFun()' not found on line 2] followed by [SGTE Warning: template: attribute - key testData not found on line 2] and unicode chars àèìòù",
     sgeunit:assert_equal(Res, ResultStr).
 
 test_include() ->
@@ -57,7 +57,7 @@ test_simpleif() ->
 
 test_simpleif_no_test() ->
     {ok, C} = sgte:compile(simple_if()),
-    RElse = sgte:render(C, []),
+    RElse = sgte:render(C, [], [quiet]),
     sgeunit:assert_equal(RElse, "Start else branch").
 
 test_if() ->

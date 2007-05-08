@@ -96,12 +96,7 @@ render_final(Term) ->
 render_element({attribute, Term, Line}, Data) ->
     case get_value(Term, Data, attribute) of
 	{error, X} ->
-	    case is_strict(options(Data)) of
-		true ->
-		    render_error({error, X, {line, Line}});
-		false ->
-		    []
-	    end;
+	    continue_from_error(fun empty_string/0, Data, X, Line);
 	Value ->
 	    render_final(Value, Data)
     end;
@@ -118,12 +113,7 @@ render_element({join, {Separator, Term}, Line}, Data) ->
 render_element({include, Tmpl, Line}, Data) -> %% include template passing all data
     case get_value(Tmpl, Data, include) of
 	{error, X} ->
-	    case is_strict(options(Data)) of
-		true ->
-		    render_error({error, X, {line, Line}});
-		false ->
-		    []
-	    end;
+	    continue_from_error(fun empty_string/0, Data, X, Line);
 	Compiled ->
 	    render(Compiled, Data)
     end;
@@ -199,12 +189,7 @@ render_element({imap, {[TmplList], Term}, Line}, Data) ->
 render_element({gettext, Key, Line}, Data) ->
     case gettext_lc(options(Data)) of
 	{error, X} ->
-	    case is_strict(options(Data)) of
-		true ->
-		    render_error({error, X, {line, Line}});
-		false ->
-		    Key % gettext_lc not found
-	    end;
+	    continue_from_error(fun () -> Key end, Data, X, Line);
 	LC ->
 	    case catch gettext:key2str(Key, LC) of
 		Translation when list(Translation) -> Translation;
@@ -213,13 +198,10 @@ render_element({gettext, Key, Line}, Data) ->
     end;
 render_element({ift, {{attribute, Test}, Then, Else}, Line}, Data) ->
     case get_value(Test, Data, ift) of
-	{error, X} ->
-	    case is_strict(options(Data)) of
-		true ->
-		    render_error({error, X, {line, Line}});
-		false ->
-		    render(Else, Data) % test not found -> false
-	    end;
+	{error, X} -> % test not found -> false
+	    continue_from_error(fun () -> render(Else, Data) end, 
+				Data, X, Line);
+		    
 	TestP ->
 	    case render_final(TestP, Data) of
 		true ->
@@ -230,13 +212,8 @@ render_element({ift, {{attribute, Test}, Then, Else}, Line}, Data) ->
     end;
 render_element({ift, {{attribute, Test}, Then}, Line}, Data) ->
     case get_value(Test, Data, ift) of
-	{error, X} ->
-	    case is_strict(options(Data)) of
-		true ->
-		    render_error({error, X, {line, Line}});
-		false ->
-		    [] % test not found -> false
-	    end;
+	{error, X} -> % test not found -> false
+	    continue_from_error(fun empty_string/0, Data, X, Line);
 	TestP ->
 	    case render_final(TestP, Data) of
 		true ->
@@ -249,11 +226,28 @@ render_element({ift, {{attribute, Test}, Then}, Line}, Data) ->
 render_element(Term, _Data) ->
     render_final(Term).
 
+
+continue_from_error(Continuation, Data, ErrReason, Line) ->
+    case is_quiet(options(Data)) of
+	true ->
+	    Continuation();
+	false ->
+	    render_error({warning, ErrReason, {line, Line}})
+    end.
+
+empty_string() ->    
+    [].
+
+render_error({warning, {TmplEl, Key, not_found}, {line, LineNo}}) ->
+    io_lib:format("[SGTE Warning: template: ~p - key ~p not found on line ~p]", [TmplEl, Key, LineNo]);
 render_error({error, {TmplEl, Key, not_found}, {line, LineNo}}) ->
     io_lib:format("[SGTE Error: template: ~p - key ~p not found on line ~p]", [TmplEl, Key, LineNo]);
 %% Render an error in the data type format
 render_error({error, {Term, DataType, invalid_data}}) ->
     io_lib:format("[SGTE Error: invalid data type: ~p is a ~p. String expected]", [Term, DataType]);
+%% Render a WarningMsg passed as a string
+render_error({warning, {TmplEl, WarningMsg}, {line, LineNo}}) when is_list(WarningMsg) ->
+    io_lib:format("[SGTE Warning: ~p ~s on line ~p]", [TmplEl, WarningMsg, LineNo]);
 %% Render an ErrMsg passed as a string
 render_error({error, {TmplEl, ErrMsg}, {line, LineNo}}) when is_list(ErrMsg) ->
     io_lib:format("[SGTE Error: ~p ~s on line ~p]", [TmplEl, ErrMsg, LineNo]).
@@ -295,8 +289,8 @@ options(Data) ->
     end.
 
 
-is_strict(Options) ->
-    lists:member(strict, Options).
+is_quiet(Options) ->
+    lists:member(quiet, Options).
 
 gettext_lc(Options) ->    
     case lists:keysearch(gettext_lc, 1, Options) of 

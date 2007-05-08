@@ -18,10 +18,10 @@ test_string() ->
     Str = "This is a test:\n" ++
 	"$testFun()$ followed by $testData$ and unicode chars àèìòù",
     {ok, Compiled} = sgte:compile(Str),
-    Res1 = sgte:render(Compiled, [], [strict]),
-    Res2 = sgte:render(Compiled, [], []),
+    Res1 = sgte:render(Compiled, []),
+    Res2 = sgte:render(Compiled, [], [quiet]),
     ResultStr1 = "This is a test:\n" ++
-	"[SGTE Error: template: attribute - key 'testFun()' not found on line 2] followed by [SGTE Error: template: attribute - key testData not found on line 2] and unicode chars àèìòù",
+	"[SGTE Warning: template: attribute - key 'testFun()' not found on line 2] followed by [SGTE Warning: template: attribute - key testData not found on line 2] and unicode chars àèìòù",
     ResultStr2 = "This is a test:\n" ++
 	" followed by  and unicode chars àèìòù",
     [sgeunit:assert_equal(Res1, ResultStr1), 
@@ -30,10 +30,10 @@ test_string() ->
 test_include() ->
     {ok, C1} = sgte:compile("bar"),
     {ok, C2} = sgte:compile("foo $include tmpl$ baz"),
-    Res1 = sgte:render(C2, []),
-    Res2 = sgte:render(C2, [], [strict]),
+    Res1 = sgte:render(C2, [], [quiet]),
+    Res2 = sgte:render(C2, []),
     ResultStr1 = "foo  baz",
-    ResultStr2 = "foo [SGTE Error: template: include - key tmpl not found on line 1] baz",
+    ResultStr2 = "foo [SGTE Warning: template: include - key tmpl not found on line 1] baz",
     [sgeunit:assert_equal(Res1, ResultStr1),
      sgeunit:assert_equal(Res2, ResultStr2)].
 
@@ -48,15 +48,15 @@ test_simpleif() ->
     {ok, C} = sgte:compile(simple_if()),
     DThen = [{test, true}],
     DElse = [{test, false}],
-    RThen = sgte:render(C, DThen, [strict]),
-    RElse = sgte:render(C, DElse, [strict]),
+    RThen = sgte:render(C, DThen),
+    RElse = sgte:render(C, DElse),
     [sgeunit:assert_equal(RThen, "Start then branch"),
      sgeunit:assert_equal(RElse, "Start else branch")].
 
 test_simpleif_no_test() ->
     {ok, C} = sgte:compile(simple_if()),
-    RElse = sgte:render(C, [], [strict]),
-    sgeunit:assert_equal(RElse, "Start [SGTE Error: template: ift - key test not found on line 1]").
+    RElse = sgte:render(C, []),
+    sgeunit:assert_equal(RElse, "Start [SGTE Warning: template: ift - key test not found on line 1]").
 
 test_if() ->
     {ok, Compiled} = sgte:compile(if_string()),

@@ -6,7 +6,7 @@ run_tests() ->
     run_tests([sgte_test_compile, 
 	       sgte_test_render, 
 	       sgte_test_map, 
-	       sgte_test_strict,
+	       sgte_test_quiet,
 	       gettext_test]).
 run_tests([]) ->
     done;

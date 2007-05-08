@@ -50,13 +50,13 @@ test_simple_en() ->
 
 test_simple_undef() ->
     {ok, C} = sgte:compile(simple()),
-    Res = sgte:render(C, [{gettext_lc, "aa"}]),
+    Res = sgte:render(C, [{gettext_lc, "aa"}], [quiet]),
     sgeunit:assert_equal("Hello World", Res).
 
 %% No language code passed
 test_no_lc() ->
     {ok, C} = sgte:compile(simple()),
-    Res = sgte:render(C, []),
+    Res = sgte:render(C, [], [quiet]),
     sgeunit:assert_equal("Hello World", Res).
 
 %%--------------------
