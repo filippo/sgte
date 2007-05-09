@@ -34,7 +34,8 @@ test: conf compile
 	cd test/src&& $(MAKE)
 
 docs: $(SRC_FILES)
-	erl -noshell -run edoc_run files ["'$<'"] \
+	erl -noshell -run edoc_run files \
+		["'src/sgte.erl', 'src/sgte_parse.erl', 'src/sgte_render.erl'"] \
 		'[{dir,"$(DOCDIR)"}]' -s init stop
 tags: src/*.erl
 	cd src/ && $(TAG_CMD) $(TAG_FLAGS) $(TAG_FILES)

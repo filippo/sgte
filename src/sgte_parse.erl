@@ -18,8 +18,6 @@
 %%% Description : Parses a template file or string and returns the
 %%% compiled template.
 %%%
-%%% @private
-%%%
 %%% Created : 25 Mar 2007 by filippo pacini <pacini@sgconsulting.it>
 %%%-------------------------------------------------------------------
 -module(sgte_parse).
@@ -294,7 +292,7 @@ parse_ift({Test, Then}) ->
 %% @spec and_parser(Rules::rules()) -> parsed()|{error, Reason}
 %%
 %% @type rules() = [rule()]
-%%       rule()  = fun(template()).
+%%       rule()  = function(template()).
 %% @type parsed() = {ok, token(), Line::int(), Remaining::template()}
 %%
 %% @doc and_parser of Rules. 
@@ -346,6 +344,7 @@ can_be_blank([H|T]) ->
 	_ ->
 	    {ok, [H|T], 0}
     end.
+
 %%--------------------------------------------------------------------
 %% @spec strip_blank(template()) -> parsed()|{error, Reason}
 %%
@@ -374,7 +373,15 @@ strip_blank1([H|T], Line) ->
 	    {ok, [H|T], Line}
     end.
 
-% until predicate P: output what it gets until P(H) is true stripping white spaces.
+%%--------------------------------------------------------------------
+%% @spec until(predicate()) -> parsed()|{error, Reason}
+%%
+%% @type predicate() = function(template()).
+%%
+%% @doc until predicate P: 
+%% output what it gets until P(H) is true stripping white spaces.
+%% @end
+%%--------------------------------------------------------------------
 until(P) ->
     fun (Tmpl) -> until(P, Tmpl, 0, []) end.
 until(_P, [], _Line, _Parsed) ->    
@@ -393,7 +400,15 @@ until(P, [H|T], Line, Parsed) ->
 	    until(P, T, Line, [H|Parsed])
     end.
 
-% until predicate P without stripping white spaces
+%%--------------------------------------------------------------------
+%% @spec until_space(predicate()) -> parsed()|{error, Reason}
+%%
+%% @type predicate() = funfunction(template()).
+%%
+%% @doc until predicate P: output whatever it gets 
+%% until P(H) is true without stripping white spaces.
+%% @end
+%%--------------------------------------------------------------------
 until_space(P) ->
     fun (Tmpl) -> until_space(P, Tmpl, 0, []) end.
 until_space(_P, [], _Line, _Parsed) ->
@@ -411,8 +426,15 @@ until_space(P, [H|T], Line, Parsed) ->
     end.
 
 
-% Greedy version: output what it gets until a $ is reached.
-% If all template string ends returns an error
+%%--------------------------------------------------------------------
+%% @spec until_greedy(predicate()) -> parsed()|{error, Reason}
+%%
+%% @type predicate() = function(template()).
+%%
+%% @doc until Greedy version: 
+%% output whatever it gets until a $ is reached 
+%% @end
+%%--------------------------------------------------------------------
 until_greedy(P) ->
     fun (Tmpl) -> until_greedy(P, Tmpl, [], 0, []) end.
 until_greedy(_P, [], _StrSofFar, _Line, _ResList) ->    
@@ -433,8 +455,16 @@ until_greedy(P, [H|T], StrSoFar, Line, ResList) ->
 	    until_greedy(P, T, [H|StrSoFar], Line, ResList)
     end.
 
-% Match parenthesis: Start and Stop are two predicates which matches
-% open and closed parenthesis. Inner parenthesis are coleccted to be parsed later.
+%%--------------------------------------------------------------------
+%% @spec parenthesis(Start::predicate(), 
+%%                   Stop::predicate()) -> parsed()|{error, Reason}
+%%
+%% @doc Match parenthesis: 
+%% Start and Stop are two predicates which matches open and 
+%% closed parenthesis. Inner parenthesis are collected to be parsed 
+%% later.
+%% @end
+%%--------------------------------------------------------------------
 parenthesis(Start, Stop) ->
     fun (Tmpl) -> parenthesis(Start, Stop, Tmpl, 0, [], 0) end.
 
@@ -466,31 +496,50 @@ parenthesis(Start, Stop, [H|T], Count, StrSoFar, Line) when Count > 0 ->
 	    end
     end.
 
-%% token(Token) ->
-%%     fun(Tmpl) -> token(Tmpl, [], Token) end.
-
-%% token([], _StrSoFar, _Token) ->
-%%     {error, token_not_found};
-%% token(Tmpl, StrSoFar, Token) ->
-%%     case lists:prefix(Token, Tmpl) of
-%% 	true ->
-%% 	    Rest = lists:nthtail(length(Token), Tmpl),
-%% 	    {ok, lists:reverse(StrSoFar), Rest};
-%% 	_ ->
-%% 	    token(tl(Tmpl), [hd(Tmpl)|StrSoFar], Token)
-%%     end.
-
+%%--------------------------------------------------------------------
+%% @spec match_char(char(), [char()]) -> bool()
+%%
+%% @doc Match character.
+%% @end
+%%--------------------------------------------------------------------
 match_char(Char, Val) ->
     [Char] == Val.
 
+%%--------------------------------------------------------------------
+%% @spec is_blank(char()) -> bool()
+%%
+%% @doc Match blank characters.
+%% @end
+%%--------------------------------------------------------------------
 is_blank(C) ->
     match_char(C, " ") 
 	orelse match_char(C, "\n")
 	orelse match_char(C, "\r").
+
+%%--------------------------------------------------------------------
+%% @spec is_dollar(char()) -> bool()
+%%
+%% @doc Match $ character.
+%% @end
+%%--------------------------------------------------------------------
 is_dollar(C) ->
     match_char(C, "$").
+
+%%--------------------------------------------------------------------
+%% @spec is_open_bracket(char()) -> bool()
+%%
+%% @doc Match { character.
+%% @end
+%%--------------------------------------------------------------------
 is_open_bracket(C) ->
     match_char(C, "{").
+
+%%--------------------------------------------------------------------
+%% @spec is_close_bracket(char()) -> bool()
+%%
+%% @doc Match } character.
+%% @end
+%%--------------------------------------------------------------------
 is_close_bracket(C) ->
     match_char(C, "}").
 
