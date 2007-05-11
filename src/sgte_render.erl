@@ -15,8 +15,13 @@
 %%% srl. Portions created by S.G. Consulting s.r.l. are Copyright (C)
 %%% 2007 S.G. Consulting srl. All Rights Reserved.
 %%%
-%%% Description : Render the compiled template and returns the 
-%%% resulting string.
+%%% @doc 
+%%% <p>Renders the compiled template and returns the 
+%%% resulting string.</p>
+%%%
+%%% <p>This module is not meant to be used directly. It's called 
+%%% through the interface of the sgte module.</p>
+%%% @end
 %%%
 %%% Created : 16 Apr 2007 by filippo pacini <pacini@sgconsulting.it>
 %%%-------------------------------------------------------------------

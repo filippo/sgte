@@ -20,7 +20,7 @@
 %%% <p>The <em>SGTE</em> module is a library implementing a Template Engine
 %%% The template system is inspired on <a href="http://www.stringtemplate.org">String Template</a>
 %%% </p><p>
-%%% The use of the Engige is as simple as (from the command line):
+%%% The use of the Engine is as simple as (from the command line):
 %%% <pre>
 %%% > {ok, Compiled} = sgte:compile(TmplStr),
 %%% > sgte:render(Compiled, Data).
@@ -31,47 +31,75 @@
 %%% Data can be a Dict or a list of tuple (e.g. [{attr1, Val1}, {attr2, Val2}])
 %%% Values can be a simple value or a function/1. In this case the function is 
 %%% called with Data as an argument.
-%%% </p><p>
-%%% Template Features:
-%%% <ol>
-%%% <li>attribute reference: e.g. <pre>$name$</pre></li>
-%%% <li>template reference: e.g. <pre>$include tmpl$</pre>.</li>
-%%% <li>application of an attribute to another: e.g. <pre>$apply myFun
-%%% aVar$</pre>. When the first attribute is callable you get the
+%%% </p>
+%%% <h3>Template Features</h3>
+%%% Below some of the template features. 
+%%% <h4>Attribute reference</h4>
+%%% Attribute reference is written as: 
+%%% <pre>
+%%% $name$
+%%% </pre> Here is an example:
+%%% <pre>
+%%% > {ok, C} = sgte:compile("Hello $name$!"),
+%%% > sgte:render(C, [{name, "Filippo").
+%%% "Hello Filippo!"
+%%% </pre>
+%%% <h4>Template reference</h4>
+%%% <pre>
+%%% $include tmpl$
+%%% </pre> Includes an external template.
+%%% <h4>Application of an attribute to another</h4>
+%%% <pre>
+%%% $apply myFun aVar$
+%%% </pre> When the first attribute is callable you get the
 %%% result of myFun(aVar). Otherwhise the result is the value of
-%%% myFun.</li>
-%%% <li>conditional evaluation: e.g. 
+%%% myFun.
+%%% <h4>Conditional evaluation</h4> 
 %%%   <pre>
 %%%   $if title$
 %%%       &lt;h1&gt;$title$&lt;/h1&gt;
-%%%   $else
+%%%   $else$
 %%%       &lt;h1&gt;default title&lt;/h1&gt;
 %%%   $end if$
-%%%   </pre></li>
-%%% <li>template application to a list of elements: e.g. if names is a list [{username, name1}, {username, name2}]
-%%%   <pre>$map li names$</pre>
-%%%   map li template to names. Each element in names is passed to the template with name attr.
-%%%   If li is the template: <pre>&lt;li&gt;&lt;b&gt;$username$&lt;/b&gt;&lt;/li&gt;</pre>
-%%%   We get the result:
-%%%          <pre>
-%%%          &lt;li&gt;&lt;b&gt;name1&lt;/b&gt;&lt;/li&gt;
-%%%          &lt;li&gt;&lt;b&gt;name2&lt;/b&gt;&lt;/li&gt;
-%%%          </pre>
-%%%   Another ways to express the same template inline is:
-%%%   <pre>$map:{&lt;li&gt;&lt;b&gt;$username$&lt;/b&gt;&lt;/li&gt;} names$</pre>
-%%% </li>
-%%% <li>alternate several templates on a list of elements:
-%%%   <pre>$map row1 row2 row3 names$</pre>
-%%%   Inline syntax:
-%%%   <pre>
-%%%   $map:{&lt;li class="row1"&gt;$username$&lt;/li&gt;, 
-%%%         &lt;li class="row2"&gt;$username$&lt;/li&gt;, 
-%%%         &lt;li class="row3"&gt;$username$&lt;/li&gt;} names$
-%%%   </pre></li>
-%%% <li>join of items using a separator:
-%%%   <pre>SELECT $join "," columns$ FROM $table$;</pre>
-%%% </li>
-%%% </ol></p>
+%%%   </pre>
+%%% <h4>Template application to a list of elements</h4>
+%%% if names is a list [{username, name1}, {username, name2}]
+%%% <pre>
+%%% $map li names$
+%%% </pre>
+%%% map li template to names. Each element in names is passed to the template with name attr.
+%%% If li is the template: 
+%%% <pre>
+%%% &lt;li&gt;&lt;b&gt;$username$&lt;/b&gt;&lt;/li&gt;</pre>
+%%% We get the result:
+%%% <pre>
+%%% &lt;li&gt;&lt;b&gt;name1&lt;/b&gt;&lt;/li&gt;
+%%% &lt;li&gt;&lt;b&gt;name2&lt;/b&gt;&lt;/li&gt;
+%%% </pre>
+%%% Another way to express the same template inline is:
+%%% <pre>
+%%% $map:{&lt;li&gt;&lt;b&gt;$username$&lt;/b&gt;&lt;/li&gt;} names$
+%%% </pre>
+%%% <h4>Join of items using a separator</h4>
+%%% <pre>
+%%% SELECT $join:{,} columns$ FROM $table$;
+%%% </pre>
+%%% <h4>Internationalization support using gettext</h4>
+%%% Gettext is a package that can be found in jungerl. It 
+%%% supports internationalization using the GNU Gettext format.
+%%% <pre>
+%%% $txt:{Hello World}$
+%%% </pre>
+%%% Here's an example supposing you already have .po files containing
+%%% translated strings:
+%%% <pre>
+%%% > {ok, C} = sgte:compile("$txt:{Hello World}$"),
+%%% > sgte:render(C, [{options, [{gettext_lc, "en"}]}]).
+%%% "Hello World"
+%%% > sgte:render(C, [{options, [{gettext_lc, "it"}]}]).
+%%% "Ciao Mondo"
+%%% </pre>
+%%%
 %%% @end
 %%% Created : 13 Sep 2006 by filippo pacini <pacini@sgconsulting.it>
 %%%-------------------------------------------------------------------

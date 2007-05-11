@@ -15,8 +15,13 @@
 %%% srl. Portions created by S.G. Consulting s.r.l. are Copyright (C)
 %%% 2007 S.G. Consulting srl. All Rights Reserved.
 %%%
-%%% Description : Parses a template file or string and returns the
-%%% compiled template.
+%%% @doc 
+%%% <p>Parses a template file or string and returns the 
+%%% compiled template.</p>
+%%%
+%%% <p>This module is not meant to be used directly. It's called 
+%%% through the interface of the sgte module.</p>
+%%% @end
 %%%
 %%% Created : 25 Mar 2007 by filippo pacini <pacini@sgconsulting.it>
 %%%-------------------------------------------------------------------
