@@ -72,6 +72,16 @@ render1(Compiled, Data, Attr) ->
 %%--------------------------------------------------------------------
 
 %%--------------------------------------------------------------------
+%% @spec render_final(term(), data(), test) -> term()
+%% @doc Render on final attribute. Called in the render of an if test.
+%% @end
+%%--------------------------------------------------------------------
+render_final(Attribute, Data, test) when is_function(Attribute) ->
+    Attribute(Data);
+render_final(Attribute, _Data, test) ->
+    Attribute.
+
+%%--------------------------------------------------------------------
 %% @spec render_final(term(), data()) -> string()
 %% @doc Render on final attribute. If it's a function call it on Data,
 %% else returns attribute.
@@ -213,7 +223,7 @@ render_element({ift, {{attribute, Test}, Then, Else}, Line}, Data) ->
 				Data, X, Line);
 		    
 	TestP ->
-	    case render_final(TestP, Data) of
+	    case render_final(TestP, Data, test) of
 		false ->
 		    render(Else, Data);
 		[] ->
@@ -231,7 +241,7 @@ render_element({ift, {{attribute, Test}, Then}, Line}, Data) ->
 	{error, X} -> % test not found -> false
 	    on_error(fun empty_string/0, Data, X, Line);
 	TestP ->
-	    case render_final(TestP, Data) of
+	    case render_final(TestP, Data, test) of
 		false ->
 		    [];
 		[] ->

@@ -49,11 +49,25 @@ test_apply() ->
 test_simpleif() ->
     {ok, C} = sgte:compile(simple_if()),
     DThen = [{test, true}],
-    DElse = [{test, false}],
+    DElse1 = [{test, false}],
+    DElse2 = [{test, []}],
+    DElse3 = [{test, ""}],
+    DElse4 = [{test, {}}],
+    DElse5 = [{test, 0}],
     RThen = sgte:render(C, DThen),
-    RElse = sgte:render(C, DElse),
-    [sgeunit:assert_equal(RThen, "Start then branch"),
-     sgeunit:assert_equal(RElse, "Start else branch")].
+    RElse1 = sgte:render(C, DElse1),
+    RElse2 = sgte:render(C, DElse2),
+    RElse3 = sgte:render(C, DElse3),
+    RElse4 = sgte:render(C, DElse4),
+    RElse5 = sgte:render(C, DElse5),
+    ThenStr = "Start then branch",
+    ElseStr =  "Start else branch",
+    [sgeunit:assert_equal(RThen, ThenStr),
+     sgeunit:assert_equal(RElse1, ElseStr),
+     sgeunit:assert_equal(RElse2, ElseStr),
+     sgeunit:assert_equal(RElse3, ElseStr),
+     sgeunit:assert_equal(RElse4, ElseStr),
+     sgeunit:assert_equal(RElse5, ElseStr)].
 
 test_simpleif_no_test() ->
     {ok, C} = sgte:compile(simple_if()),
