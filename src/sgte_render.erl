@@ -214,10 +214,10 @@ render_element({ift, {{attribute, Test}, Then, Else}, Line}, Data) ->
 		    
 	TestP ->
 	    case render_final(TestP, Data) of
-		true ->
-		    render(Then, Data);
+		false ->
+		    render(Else, Data);
 		_ ->
-		    render(Else, Data)
+		    render(Then, Data)
 	    end
     end;
 render_element({ift, {{attribute, Test}, Then}, Line}, Data) ->
@@ -226,10 +226,10 @@ render_element({ift, {{attribute, Test}, Then}, Line}, Data) ->
 	    on_error(fun empty_string/0, Data, X, Line);
 	TestP ->
 	    case render_final(TestP, Data) of
-		true ->
-		    Res = render(Then, Data);
+		false ->
+		    Res = [];
 		_ ->
-		    Res = []
+		    Res = render(Then, Data)
 	    end,
 	    Res
     end;
