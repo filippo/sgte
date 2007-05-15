@@ -216,6 +216,12 @@ render_element({ift, {{attribute, Test}, Then, Else}, Line}, Data) ->
 	    case render_final(TestP, Data) of
 		false ->
 		    render(Else, Data);
+		[] ->
+		    render(Else, Data);
+		{} ->
+		    render(Else, Data);
+		0 ->
+		    render(Else, Data);
 		_ ->
 		    render(Then, Data)
 	    end
@@ -227,11 +233,16 @@ render_element({ift, {{attribute, Test}, Then}, Line}, Data) ->
 	TestP ->
 	    case render_final(TestP, Data) of
 		false ->
-		    Res = [];
+		    [];
+		[] ->
+		    [];
+		{} ->
+		    [];
+		0 ->
+		    [];
 		_ ->
-		    Res = render(Then, Data)
-	    end,
-	    Res
+		    render(Then, Data)
+	    end
     end;
 render_element(Term, _Data) ->
     render_final(Term).
