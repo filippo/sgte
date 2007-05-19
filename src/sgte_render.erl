@@ -34,8 +34,10 @@
 %% @doc Calls render/2 passing options in the data.
 %% @end
 %%--------------------------------------------------------------------
-render(Compiled, Data, Options) ->
-    render(Compiled, [{options, Options}|Data]).
+render(Compiled, Data, Options) when is_list(Data) ->
+    render(Compiled, [{options, Options}|Data]);
+render(Compiled, Data, Options) ->  %% Data is a dict
+    render(Compiled, dict:store(options, Options, Data)).
 
 %%--------------------------------------------------------------------
 %% @spec render(compiled(), data()) -> string()
@@ -123,7 +125,7 @@ render_element({attribute, Term, Line}, Data) ->
 render_element({join, {Separator, Term}, Line}, Data) ->
     case get_value(Term, Data, join) of
 	{error, X} ->
-	    render_error({error, X, {line, Line}});
+	    on_error(fun empty_string/0, Data, X, Line);
 	ValueList ->
 	    Concat = lists:flatten([X++Separator || X <- ValueList]),
 	    Value = string:sub_string(Concat, 1, length(Concat)-length(Separator)),
