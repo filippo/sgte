@@ -30,6 +30,8 @@
 %% API
 -export([parse/1, gettext_strings/1]).
 
+-define(KEYWORD_START, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_").
+
 %%====================================================================
 %% API
 %%====================================================================
@@ -165,12 +167,17 @@ parse("$if "++T, Parsed, Line) ->
 parse([H|T], Parsed, Line) when H == $$ andalso hd(T) == $$ ->
     parse(tl(T), [H|Parsed], Line);
 parse([H|T], Parsed, Line) when H == $$ ->
-    P =  until(fun is_dollar/1),
-    case P(T) of
-	{ok, Token, LinesParsed, Rest} ->
-	    parse(Rest, [{attribute, Token, Line}|Parsed], Line+LinesParsed);
-	{error, Reason} -> 
-	    {error, {attribute, Reason, Line}}
+    case lists:member(hd(T), ?KEYWORD_START) of
+	true ->
+	    P =  until(fun is_dollar/1),
+	    case P(T) of
+		{ok, Token, LinesParsed, Rest} ->
+		    parse(Rest, [{attribute, Token, Line}|Parsed], Line+LinesParsed);
+		{error, Reason} -> 
+		    {error, {attribute, Reason, Line}}
+	    end;
+	false ->
+	    parse(T, [H|Parsed], Line)
     end;
 parse([H|T], Parsed, Line) when H == $\\ andalso hd(T) == $$ ->
     parse(tl(T), [hd(T)|Parsed], Line);

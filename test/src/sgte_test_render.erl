@@ -4,7 +4,7 @@
 -export([test_simpleif/0, test_simpleif_no_test/0]).
 -export([test_fif/0, test_fif2/0, test_nested_fif/0, test_if/0]).
 -export([test_fun/0, test_file/0]).
-
+-export([test_js_support/0]).
 
 %%--------------------
 %%
@@ -128,6 +128,11 @@ test_fun() ->
 test_file() ->
     Res = sgte:compile_file("myfile.tmpl"),
     sgeunit:assert_equal(Res, {error, enoent}).
+
+test_js_support() ->
+    {ok, CF} = sgte:compile("$('someId') and an $attr$ and $('anotherId')"),
+    Res = sgte:render(CF, [{attr, "attribute"}]),
+    sgeunit:assert_equal(Res, "$('someId') and an attribute and $('anotherId')").
 
 
 %%--------------------
