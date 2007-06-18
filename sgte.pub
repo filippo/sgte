@@ -1,0 +1,15 @@
+{author, {"S.G. Consulting", "pacini@sgconsulting.it"}}.
+{packager, {"Filippo Pacini", "pacini@sgconsulting.it"}}.
+{category, ["text","web"]}.
+{name, "sgte"}.
+{vsn, "0.5.0"}.
+{depends, ["kernel","stdlib"]}.
+{keywords, ["template engine","web","template","code generation",
+            "xml", "dynamic content"]}.
+{summary, "Simple Template Engine"}.
+{abstract, "sgte is a simple Erlang template engine for generating structured "
+           "output (html web pages, xml, code, sql, csv files, emails, etc...)"
+           "It's based on "
+           "<a href="http://www.stringtemplate.org/">String Template</a>."}.
+{home, "http://code.google.com/p/sgte/"}.
+{sources, {svn, "http://sgte.googlecode.com/svn/trunk/"}}.
