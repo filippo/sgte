@@ -35,7 +35,7 @@ test: conf compile
 
 docs: $(SRC_FILES)
 	erl -noshell -run edoc_run files \
-		["'src/sgte.erl', 'src/sgte_parse.erl', 'src/sgte_render.erl'"] \
+		["'src/sgte.erl', 'src/sgte_parse.erl', 'src/sgte_render.erl', 'src/sgte_gettext.erl'"] \
 		'[{dir,"$(DOCDIR)"}]' -s init stop
 tags: src/*.erl
 	cd src/ && $(TAG_CMD) $(TAG_FLAGS) $(TAG_FILES)

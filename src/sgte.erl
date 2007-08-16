@@ -106,7 +106,14 @@
 -module(sgte).
 
 %% API
--export([compile/1, compile_file/1, render/2, render/3, gettext_strings/1]).
+-export([compile/1, 
+         compile_file/1, 
+         render/2, 
+         render/3, 
+         gettext_strings/1,
+         gettext_init/1,
+         gettext_init/2,
+         gettext_init/3]).
 
 %%yaws_tei is not in a public release yet -behaviour(yaws_tei).
 
@@ -150,7 +157,7 @@ compile_file(FileName) ->
 %%              Options::options()) -> string()
 %%
 %% @type data() = [tuple()]|dict()
-%% @type options() = [options()]
+%% @type options() = [option()]
 %%       option()  = quiet|{gettext_lc, string()}.
 %%
 %% @doc Renders the compiled template.
@@ -188,3 +195,57 @@ gettext_strings(FileName) ->
 	Err -> 
 	    Err
     end.
+
+%%--------------------------------------------------------------------
+%% @spec gettext_init(SrcFiles::src_files()) ->
+%%                            ok | {error, Reason}
+%%
+%% @type src_files()  = [string()]. Source files to parse for gettext strings.
+%%
+%% @doc Creates the gettext template file (.pot). 
+%% SrcFiles is the list of files to be parsed for gettext strings. 
+%% Each gettext string found will be written to the .pot file. 
+%% The default name of the generated file will be messages.pot.
+%% @end
+%%--------------------------------------------------------------------
+gettext_init(SrcFiles) ->
+    {ok, TargetDir} = file:get_cwd(),
+    sgte_gettext:gettext_init(TargetDir, SrcFiles, "messages.pot").
+
+%%--------------------------------------------------------------------
+%% @spec gettext_init(TargetDir::target_dir(), 
+%%                    SrcFiles::src_files()) -> 
+%%                            ok | {error, Reason}
+%%
+%% @type target_dir() = string(). Dir where the .pot file will be written
+%%
+%% @doc Creates the gettext template file (.pot). 
+%% TargetDir is the directory where the file will be created. 
+%% If TargetDir doesn't exists it will be created. 
+%% SrcFiles is the list of files to be parsed for gettext strings. 
+%% Each gettext string found will be written to the .pot file. 
+%% The file name of the generated file will be messages.pot.
+%% @end
+%%--------------------------------------------------------------------
+gettext_init(TargetDir, SrcFiles) ->
+    sgte_gettext:gettext_init(TargetDir, SrcFiles, "messages.pot").
+
+%%--------------------------------------------------------------------
+%% @spec gettext_init(TargetDir::target_dir(), 
+%%                    SrcFiles::src_files(), 
+%%                    Domain::domain()) -> 
+%%                            ok | {error, Reason}
+%%
+%% @type domain() = string(). The name of the .po file to write.
+%%
+%% @doc Creates the gettext template file (.pot). 
+%% TargetDir is the directory where the file will be created. 
+%% If TargetDir doesn't exists it will be created. 
+%% SrcFiles is the list of files to be parsed for gettext strings. 
+%% Each gettext string found will be written to the .pot file. 
+%% Domain (when present) is the name of the file to generate. 
+%% If no Domain is defined the default name will be messages.pot.
+%% @end
+%%--------------------------------------------------------------------
+gettext_init(TargetDir, SrcFiles, Domain) ->
+    sgte_gettext:gettext_init(TargetDir, SrcFiles, Domain).

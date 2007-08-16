@@ -208,7 +208,8 @@ gettext_strings([], Parsed, _L) ->
     lists:reverse(Parsed);
 gettext_strings("$txt:"++T, Parsed, L) ->
     Rules = [fun can_be_blank/1, 
-	     parenthesis(fun is_open_bracket/1, fun is_close_bracket/1), 
+	     parenthesis(fun is_open_bracket/1, 
+                         fun is_close_bracket/1), 
 	     until(fun is_dollar/1)],
     P = and_parser(Rules),
     case P(T) of
@@ -225,6 +226,7 @@ gettext_strings([H|T], Parsed, L) when [H] == "\r" orelse [H] == "\n" ->
     gettext_strings(T, Parsed, L+1);
 gettext_strings([_H|T], Parsed, L) ->
     gettext_strings(T, Parsed, L).
+
    
 %%====================================================================
 %% Internal functions
@@ -264,8 +266,8 @@ collect_ift("$if "++Rest, Token, {Test}, Line) ->  %% Nested if
     end;
 collect_ift([H|Rest], Token, {}, Line) when [H] == "$" ->
     collect_ift(Rest, [], {lists:reverse(Token)}, Line);
-collect_ift([H|Rest], Token, T, Line) when [H] == "\r" andalso hd(T) == "\n" ->
-    collect_ift(Rest, ["\r\n"|Token], T, Line+1);
+collect_ift([H|Rest], Token, T, Line) when [H] == "\r" andalso hd(Rest) == "\n" ->
+    collect_ift(tl(Rest), ["\r\n"|Token], T, Line+1);
 collect_ift([H|Rest], Token, T, Line) when [H] == "\r" orelse [H] == "\n" ->
     collect_ift(Rest, [H|Token], T, Line+1);
 collect_ift([H|Rest], Token, T, Line) ->
@@ -328,11 +330,9 @@ and_parser([Rule|T], Tmpl, SoFar, Line) ->
 	    and_parser(T, Rest, [Tok|SoFar], Line+LinesParsed)
     end.
 
-
 %%
 %% Parser Rules
 %%
-
 %%--------------------------------------------------------------------
 %% @spec simple(template()) -> parsed()|{error, Reason}
 %%
@@ -554,5 +554,3 @@ is_open_bracket(C) ->
 %%--------------------------------------------------------------------
 is_close_bracket(C) ->
     match_char(C, "}").
-
-
