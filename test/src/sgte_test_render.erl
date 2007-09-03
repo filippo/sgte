@@ -1,11 +1,13 @@
 -module(sgte_test_render).
 
--export([test_multi_attr/0]).
+-export([test_multi_attr/0, test_record_access/0]).
 -export([test_string/0, test_string_err/0, test_include/0, test_apply/0]).
 -export([test_simpleif/0, test_simpleif_no_test/0]).
 -export([test_fif/0, test_fif2/0, test_nested_fif/0, test_if/0]).
 -export([test_fun/0, test_file/0]).
 -export([test_js_support/0]).
+
+-record(test_rec, {col1, col2, col3}).
 
 %%--------------------
 %%
@@ -18,6 +20,13 @@
 test_multi_attr() ->
     {ok, C} = sgte:compile("$foo.bar.baz$"),
     Res = sgte:render(C, [{foo, [{bar, [{baz, "foo, bar and baz"}]}]}]),
+    ResultStr = "foo, bar and baz",
+    sgeunit:assert_equal(Res, ResultStr).
+
+test_record_access() ->
+    Rec = #test_rec{col1="foo", col2="bar", col3="baz"},
+    {ok, C} = sgte:compile("$test_rec.col1$, $test_rec.col2$ and $test_rec.col3$"),
+    Res = sgte:render(C, [sgte:rec_to_kv(Rec, record_info(fields, test_rec))]),
     ResultStr = "foo, bar and baz",
     sgeunit:assert_equal(Res, ResultStr).
     
