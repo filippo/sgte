@@ -172,7 +172,8 @@ parse([H|T], Parsed, Line) when H == $$ ->
 	    P =  until(fun is_dollar/1),
 	    case P(T) of
 		{ok, Token, LinesParsed, Rest} ->
-		    parse(Rest, [{attribute, Token, Line}|Parsed], Line+LinesParsed);
+                    TokL = [list_to_atom(X) || X <- string:tokens(atom_to_list(Token), ".")],
+		    parse(Rest, [{attribute, TokL, Line}|Parsed], Line+LinesParsed);
 		{error, Reason} -> 
 		    {error, {attribute, Reason, Line}}
 	    end;

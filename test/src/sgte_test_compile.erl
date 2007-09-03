@@ -1,6 +1,6 @@
 -module(sgte_test_compile).
 
--export([test_attr/0, test_attr_multiline/0]).
+-export([test_attr/0, test_multipleattr/0, test_attr_multiline/0]).
 -export([test_include/0, test_include_multiline/0]).
 -export([test_apply/0]).
 -export([test_map/0, test_mapl/0]).
@@ -16,7 +16,12 @@
 test_attr() ->
     Str = "foo $bar$ baz",
     {ok, Compiled} = sgte:compile(Str),
-    sgeunit:assert_equal(Compiled, "foo " ++ [{attribute, bar, 1}] ++ " baz").
+    sgeunit:assert_equal(Compiled, "foo " ++ [{attribute, [bar], 1}] ++ " baz").
+
+test_multipleattr() ->
+    Str = "$foo.bar.baz$",
+    {ok, Compiled} = sgte:compile(Str),
+    sgeunit:assert_equal(Compiled, [{attribute, [foo, bar, baz], 1}]).
 
 test_attr_multiline() ->
     Str = "foo 
@@ -24,7 +29,7 @@ $bar
 $
  baz",
     {ok, Compiled} = sgte:compile(Str),
-    sgeunit:assert_equal(Compiled, "foo \n" ++ [{attribute, bar, 2}] ++ "\n baz").
+    sgeunit:assert_equal(Compiled, "foo \n" ++ [{attribute, [bar], 2}] ++ "\n baz").
 
 test_include() ->
     {ok, C} = sgte:compile("foo $include tmpl$ baz"),
@@ -58,7 +63,7 @@ test_mapj() ->
 
 test_inline_map() ->
     {ok, C} = sgte:compile("foo $map:{template: $attr$} values$"),
-    Result = "foo " ++ [{imap, {["template: " ++ [{attribute, attr, 1}]], values}, 1}],
+    Result = "foo " ++ [{imap, {["template: " ++ [{attribute, [attr], 1}]], values}, 1}],
     sgeunit:assert_equal(C, Result).
 
 

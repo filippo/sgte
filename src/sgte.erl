@@ -44,6 +44,12 @@
 %%% > sgte:render(C, [{name, "Filippo").
 %%% "Hello Filippo!"
 %%% </pre>
+%%% You can also use attribute references to access nested structures. Eg.:
+%%% <pre>
+%%% > {ok, C} = sgte:compile("$foo.bar.baz$"),
+%%% > sgte:render(C, [{foo, {bar, {baz, "a string"}}}]),
+%%% "a string"
+%%% </pre>
 %%% <h4>Template reference</h4>
 %%% <pre>
 %%% $include tmpl$
@@ -113,7 +119,8 @@
          gettext_strings/1,
          gettext_init/1,
          gettext_init/2,
-         gettext_init/3]).
+         gettext_init/3,
+         record_to_kv/2]).
 
 %%yaws_tei is not in a public release yet -behaviour(yaws_tei).
 
@@ -249,3 +256,15 @@ gettext_init(TargetDir, SrcFiles) ->
 %%--------------------------------------------------------------------
 gettext_init(TargetDir, SrcFiles, Domain) ->
     sgte_gettext:gettext_init(TargetDir, SrcFiles, Domain).
+
+%%--------------------------------------------------------------------
+%% @spec record_to_kv(RecordTuple, Keys::[atom()]) -> sgte_record() |
+%%                                         {error, not_enough_keys} |
+%%                                         {error, too_much_keys}
+%% @doc TODO: write doc
+%% @end
+%%--------------------------------------------------------------------
+record_to_kv(RecordTuple, Keys) ->
+    sgte_dict:record_to_kv(RecordTuple, Keys).
+
+

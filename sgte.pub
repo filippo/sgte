@@ -2,7 +2,7 @@
 {packager, {"Filippo Pacini", "pacini@sgconsulting.it"}}.
 {category, ["text","web"]}.
 {name, "sgte"}.
-{vsn, "0.5.1"}.
+{vsn, "0.6.0"}.
 {depends, ["kernel","stdlib"]}.
 {keywords, ["template engine","web","template","code generation",
             "xml", "dynamic content"]}.

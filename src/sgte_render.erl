@@ -36,8 +36,8 @@
 %%--------------------------------------------------------------------
 render(Compiled, Data, Options) when is_list(Data) ->
     render(Compiled, [{options, Options}|Data]);
-render(Compiled, Data, Options) ->  %% Data is a dict
-    render(Compiled, dict:store(options, Options, Data)).
+render(Compiled, Data, Options) ->  %% Data is a sgte_dict
+    render(Compiled, sgte_dict:store(options, Options, Data)).
 
 %%--------------------------------------------------------------------
 %% @spec render(compiled(), data()) -> string()
@@ -45,7 +45,7 @@ render(Compiled, Data, Options) ->  %% Data is a dict
 %% @end
 %%--------------------------------------------------------------------
 render(Compiled, Data) when is_list(Data) ->
-    render(Compiled, dict:from_list(Data));
+    render(Compiled, sgte_dict:from_list(Data));
 render(Compiled, Data) when is_function(Compiled) ->
     render_final(Compiled, Data);
 render(Compiled, Data) ->
@@ -58,14 +58,14 @@ render(Compiled, Data) ->
 %% @end
 %%--------------------------------------------------------------------
 render1(Compiled, Data, Attr) when is_list(Attr) ->
-    Data1 = dict:merge(fun(_K, _V1, V2) -> V2 end, Data, dict:from_list(Attr)),
+    Data1 = sgte_dict:merge(fun(_K, _V1, V2) -> V2 end, Data, sgte_dict:from_list(Attr)),
     lists:flatten([render_element(X, Data1) || X <- Compiled]);
 render1(Compiled, Data, Attr) when is_function(Compiled) ->
     {K, V} = Attr,
-    render_final(Compiled, dict:store(K, V, Data));
+    render_final(Compiled, sgte_dict:store(K, V, Data));
 render1(Compiled, Data, Attr) ->
     {K, V} = Attr,
-    Data1 = dict:store(K, V, Data),
+    Data1 = sgte_dict:store(K, V, Data),
     lists:flatten([render_element(X, Data1) || X <- Compiled]).
 
     
@@ -115,8 +115,8 @@ render_final(Term) ->
 %% @doc Render a token from the parsed template.
 %% @end
 %%--------------------------------------------------------------------
-render_element({attribute, Term, Line}, Data) ->
-    case get_value(Term, Data, attribute) of
+render_element({attribute, AttrList, Line}, Data) ->
+    case get_value2(AttrList, Data, attribute) of
 	{error, X} ->
 	    on_error(fun empty_string/0, Data, X, Line);
 	Value ->
@@ -310,17 +310,24 @@ render_error({error, {TmplEl, ErrMsg}, {line, LineNo}}) when is_list(ErrMsg) ->
 %%--------------------------------------------------------------------
 %%--------------------------------------------------------------------
 %% @spec get_value(Key::atom(), 
-%%                 Dict::dict(), 
+%%                 Dict::sgte_dict(), 
 %%                 Where::atom()) -> Value|{error, Reason}
 %% @doc get Key from Dict. If Key is not found returns an error.
 %% Where is used to return a more desciptive error.
 %% @end
 %%--------------------------------------------------------------------
 get_value(Key, Dict, Where) ->
-    case dict:find(Key, Dict) of
+    case sgte_dict:find(Key, Dict) of
 	{ok, V} ->
 	    V;
 	error ->
+	    {error, {Where, Key, not_found}}
+    end.
+get_value2(KeyList, Dict, Where) ->
+    case sgte_dict:rfind(KeyList, Dict) of
+	{ok, V} ->
+	    V;
+	{error, Key} ->
 	    {error, {Where, Key, not_found}}
     end.
 
@@ -349,7 +356,7 @@ group([H1|R1], [H2|R2], Recurring, Result) ->
 %% @end
 %%--------------------------------------------------------------------
 options(Data) ->
-    case dict:find(options, Data) of
+    case sgte_dict:find(options, Data) of
 	{ok, Options} ->
 	    Options;
 	_ ->

@@ -1,5 +1,6 @@
 -module(sgte_test_render).
 
+-export([test_multi_attr/0]).
 -export([test_string/0, test_string_err/0, test_include/0, test_apply/0]).
 -export([test_simpleif/0, test_simpleif_no_test/0]).
 -export([test_fif/0, test_fif2/0, test_nested_fif/0, test_if/0]).
@@ -14,6 +15,12 @@
 %%
 %% Render Test
 %%
+test_multi_attr() ->
+    {ok, C} = sgte:compile("$foo.bar.baz$"),
+    Res = sgte:render(C, [{foo, [{bar, [{baz, "foo, bar and baz"}]}]}]),
+    ResultStr = "foo, bar and baz",
+    sgeunit:assert_equal(Res, ResultStr).
+    
 test_string() ->
     Str = "This is a test:\n" ++
 	"$testFun()$ followed by $testData$ and unicode characters  àèìòù",
