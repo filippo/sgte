@@ -80,7 +80,7 @@ rec_to_name_kv(RecordTuple, Keys) ->
     end.
     
 rec_to_kv(RecordTuple, Keys) ->
-    [Name|Values] = tuple_to_list(RecordTuple),
+    [_Name|Values] = tuple_to_list(RecordTuple),
     case length(Values) =:= length(Keys) of
         true ->
             lists:zip(Keys, Values);

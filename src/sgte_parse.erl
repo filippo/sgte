@@ -66,7 +66,8 @@ parse("$apply"++T, Parsed, Line) ->
 		    until(fun is_dollar/1)]),
     case P(T) of
 	{ok, [F, V], LinesParsed, Rest} ->
-	    parse(Rest, [{apply, {F, V}, Line}|Parsed], Line+LinesParsed);
+            TokL = [list_to_atom(X) || X <- string:tokens(atom_to_list(V), ".")],
+	    parse(Rest, [{apply, {F, TokL}, Line}|Parsed], Line+LinesParsed);
 	{error, Reason} -> 
 	    {error, {apply, Reason, Line}}
     end;

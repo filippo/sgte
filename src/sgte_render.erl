@@ -140,12 +140,12 @@ render_element({include, Tmpl, Line}, Data) -> %% include template passing all d
 	    render(Compiled, Data)
     end;
 
-render_element({apply, {Callable, Var}, Line}, Data) -> %% apply first element to Var
+render_element({apply, {Callable, VarList}, Line}, Data) -> %% apply first element to VarList
     case get_value(Callable, Data, apply) of
 	{error, X} ->
 	    on_error(fun empty_string/0, Data, X, Line);
 	ToCall ->
-	    case get_value(Var, Data, apply) of
+	    case get_value2(VarList, Data, apply) of
 		{error, X} ->
 		    on_error(fun empty_string/0, Data, X, Line);
 		Value ->

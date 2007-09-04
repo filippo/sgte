@@ -43,7 +43,7 @@ tmpl$ baz",
 
 test_apply() ->
     {ok, C} = sgte:compile("foo $apply bar myVar$ baz"),
-    sgeunit:assert_equal(C, "foo " ++ [{apply, {bar, myVar}, 1}] ++ " baz").
+    sgeunit:assert_equal(C, "foo " ++ [{apply, {bar, [myVar]}, 1}] ++ " baz").
 
 test_map() ->
     {ok, C} = sgte:compile("foo $map bar varList$ baz"),
