@@ -1,0 +1,63 @@
+-module(eunit_gettext).
+
+-include_lib("eunit/include/eunit.hrl").
+
+%%--------------------
+%%
+%% Tests
+%%
+%%--------------------
+
+%% Setup Tests
+setup() ->
+    try
+	gettext_server:start(),
+	{_, SeBin} = file:read_file("../priv/gettext_test/swedish.po"),
+	{_, ItBin} = file:read_file("../priv/gettext_test/italian.po"),
+	ok = gettext:store_pofile("se", SeBin),
+	ok = gettext:store_pofile("it", ItBin)
+    catch
+	_Err:_Reason ->
+	    error
+    end.
+
+%% Test Compile
+compile_test_() ->
+    {ok, C} = sgte:compile(simple()),
+    ?_assert(C =:= [{gettext, "Hello World", 1}]).
+
+%% Test Render
+simple_it_test_() ->
+    {ok, C} = sgte:compile(simple()),
+    Res = sgte:render(C, [], [{gettext_lc, "it"}]),
+    ?_assert("Ciao Mondo" =:= Res).
+
+simple_se_test_() ->
+    {ok, C} = sgte:compile(simple()),
+    Res = sgte:render(C, [], [{gettext_lc, "se"}]),
+    ?_assert("Hej V\344rld" =:= Res).
+
+simple_en_test_() ->
+    {ok, C} = sgte:compile(simple()),
+    Res = sgte:render(C, [], [{gettext_lc, "en"}]),
+    ?_assert("Hello World" =:= Res).
+
+simple_undef_test_() ->
+    {ok, C} = sgte:compile(simple()),
+    Res = sgte:render(C, [{gettext_lc, "aa"}], [quiet]),
+    ?_assert("Hello World" =:= Res).
+
+%% No language code passed
+no_lc_test_() ->
+    {ok, C} = sgte:compile(simple()),
+    Res = sgte:render(C, [], [quiet]),
+    ?_assert("Hello World" =:= Res).
+
+%%--------------------
+%%
+%% Internal functions
+%%
+%%--------------------
+%% Simple Template String
+simple() ->
+    "$txt:{Hello World}$".
