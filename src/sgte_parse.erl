@@ -66,8 +66,7 @@ parse("$apply"++T, Parsed, Line) ->
 		    until(fun is_dollar/1)]),
     case P(T) of
 	{ok, [F, V], LinesParsed, Rest} ->
-            TokL = [list_to_atom(X) || X <- string:tokens(atom_to_list(V), ".")],
-	    parse(Rest, [{apply, {F, TokL}, Line}|Parsed], Line+LinesParsed);
+	    parse(Rest, [{apply, {F, V}, Line}|Parsed], Line+LinesParsed);
 	{error, Reason} -> 
 	    {error, {apply, Reason, Line}}
     end;
@@ -143,9 +142,9 @@ parse("$txt:"++T, Parsed, Line) ->
     Rules = [fun can_be_blank/1, 
 	     parenthesis(fun is_open_bracket/1, fun is_close_bracket/1), 
 	     until(fun is_dollar/1)],
-    P = and_parser(Rules),    
+    P = and_parser(Rules),
     case P(T) of
- 	{ok, [Key, ''], LinesParsed, Rest} ->
+ 	{ok, [Key, ""], LinesParsed, Rest} ->
 	    parse(Rest, [{gettext, Key, Line}|Parsed], Line+LinesParsed);
  	{ok, [_Key, Whatever], _LinesParsed, _Rest} ->
  	    {error, {gettext, {Whatever, not_allowed_here}, Line}};
@@ -173,8 +172,7 @@ parse([H|T], Parsed, Line) when H == $$ ->
 	    P =  until(fun is_dollar/1),
 	    case P(T) of
 		{ok, Token, LinesParsed, Rest} ->
-                    TokL = [list_to_atom(X) || X <- string:tokens(atom_to_list(Token), ".")],
-		    parse(Rest, [{attribute, TokL, Line}|Parsed], Line+LinesParsed);
+		    parse(Rest, [{attribute, Token, Line}|Parsed], Line+LinesParsed);
 		{error, Reason} -> 
 		    {error, {attribute, Reason, Line}}
 	    end;
@@ -409,7 +407,9 @@ until(P, [H|T], Line, Parsed) when [H]=="\n" orelse [H]== "\r" ->
 until(P, [H|T], Line, Parsed) ->
     case P(H) of
 	true ->
-	    {ok, list_to_atom(lists:reverse(Parsed)), Line, T};
+            Parsed1 = lists:reverse(Parsed),
+            TokL = [list_to_atom(X) || X <- string:tokens(Parsed1, ".")],
+	    {ok, TokL, Line, T};
 	_ ->
 	    until(P, T, Line, [H|Parsed])
     end.
@@ -434,7 +434,9 @@ until_space(P, [H|T], Line, Parsed) when [H]=="\n" orelse [H]== "\r" ->
 until_space(P, [H|T], Line, Parsed) ->
     case P(H) of
 	true ->
-	    {ok, list_to_atom(lists:reverse(Parsed)), Line, T};
+            Parsed1 = lists:reverse(Parsed),
+            TokL = [list_to_atom(X) || X <- string:tokens(Parsed1, ".")],
+	    {ok, TokL, Line, T};
 	_ ->
 	    until_space(P, T, Line, [H|Parsed])
     end.

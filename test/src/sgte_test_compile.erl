@@ -33,43 +33,43 @@ $
 
 test_include() ->
     {ok, C} = sgte:compile("foo $include tmpl$ baz"),
-    sgeunit:assert_equal(C, "foo " ++ [{include, tmpl, 1}] ++ " baz").
+    sgeunit:assert_equal(C, "foo " ++ [{include, [tmpl], 1}] ++ " baz").
 
 test_include_multiline() ->
     Str = "foo $include
 tmpl$ baz",
     {ok, C} = sgte:compile(Str),
-    sgeunit:assert_equal(C, "foo " ++ [{include, tmpl, 1}] ++ " baz").
+    sgeunit:assert_equal(C, "foo " ++ [{include, [tmpl], 1}] ++ " baz").
 
 test_apply() ->
     {ok, C} = sgte:compile("foo $apply bar myVar$ baz"),
-    sgeunit:assert_equal(C, "foo " ++ [{apply, {bar, [myVar]}, 1}] ++ " baz").
+    sgeunit:assert_equal(C, "foo " ++ [{apply, {[bar], [myVar]}, 1}] ++ " baz").
 
 test_map() ->
     {ok, C} = sgte:compile("foo $map bar varList$ baz"),
-    sgeunit:assert_equal(C, "foo " ++ [{map, {bar, varList}, 1}] ++ " baz").
+    sgeunit:assert_equal(C, "foo " ++ [{map, {[bar], [varList]}, 1}] ++ " baz").
 
 test_mmap() ->
     {ok, C} = sgte:compile("foo $mmap bar baz varList$"),
-    sgeunit:assert_equal(C, "foo " ++ [{mmap, {[bar, baz], varList}, 1}]).
+    sgeunit:assert_equal(C, "foo " ++ [{mmap, {[bar, baz], [varList]}, 1}]).
 
 test_mapl() ->
     {ok, C} = sgte:compile("foo $mapl    bar varList$"),
-    sgeunit:assert_equal(C, "foo " ++ [{mapl, {bar, varList}, 1}]).
+    sgeunit:assert_equal(C, "foo " ++ [{mapl, {[bar], [varList]}, 1}]).
 
 test_mapj() ->
     {ok, C} = sgte:compile("foo $mapj bar varList separator$"),
-    sgeunit:assert_equal(C, "foo " ++ [{mapj, {bar, varList, separator}, 1}]).
+    sgeunit:assert_equal(C, "foo " ++ [{mapj, {[bar], [varList], [separator]}, 1}]).
 
 test_inline_map() ->
     {ok, C} = sgte:compile("foo $map:{template: $attr$} values$"),
-    Result = "foo " ++ [{imap, {["template: " ++ [{attribute, [attr], 1}]], values}, 1}],
+    Result = "foo " ++ [{imap, {["template: " ++ [{attribute, [attr], 1}]], [values]}, 1}],
     sgeunit:assert_equal(C, Result).
 
 
 test_join() ->
     {ok, C} = sgte:compile("foo $join:{separator} values$"),
-    sgeunit:assert_equal(C, "foo " ++ [{join, {"separator", values}, 1}]).
+    sgeunit:assert_equal(C, "foo " ++ [{join, {"separator", [values]}, 1}]).
 
 test_if() ->
     {ok, C} = sgte:compile(simple_if()),
