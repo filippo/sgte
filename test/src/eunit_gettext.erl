@@ -27,28 +27,35 @@ compile_test_() ->
     ?_assert(C =:= [{gettext, "Hello World", 1}]).
 
 %% Test Render
-simple_it_test_() ->
+do_test_() ->
+    {setup, fun setup/0, [fun simple_it/0,
+                          fun simple_se/0,
+                          fun simple_en/0,
+                          fun simple_undef/0,
+                          fun no_lc/0]}.
+
+simple_it() ->
     {ok, C} = sgte:compile(simple()),
     Res = sgte:render(C, [], [{gettext_lc, "it"}]),
     ?_assert("Ciao Mondo" =:= Res).
 
-simple_se_test_() ->
+simple_se() ->
     {ok, C} = sgte:compile(simple()),
     Res = sgte:render(C, [], [{gettext_lc, "se"}]),
     ?_assert("Hej V\344rld" =:= Res).
 
-simple_en_test_() ->
+simple_en() ->
     {ok, C} = sgte:compile(simple()),
     Res = sgte:render(C, [], [{gettext_lc, "en"}]),
     ?_assert("Hello World" =:= Res).
 
-simple_undef_test_() ->
+simple_undef() ->
     {ok, C} = sgte:compile(simple()),
     Res = sgte:render(C, [{gettext_lc, "aa"}], [quiet]),
     ?_assert("Hello World" =:= Res).
 
 %% No language code passed
-no_lc_test_() ->
+no_lc() ->
     {ok, C} = sgte:compile(simple()),
     Res = sgte:render(C, [], [quiet]),
     ?_assert("Hello World" =:= Res).
