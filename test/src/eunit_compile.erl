@@ -66,7 +66,7 @@ join_test_() ->
 
 if_test_() ->
     {ok, C} = sgte:compile(simple_if()),
-    Result = "Start " ++ [{ift, {{attribute, test}, "then branch", "else branch"}, 1}],
+    Result = "Start " ++ [{ift, {{attribute, [test, flag]}, "then branch", "else branch"}, 1}],
     ?_assert(C =:= Result).
 
 
@@ -77,7 +77,7 @@ if_test_() ->
 %%--------------------
 %% Template String
 simple_if() ->
-    "Start $if test$" ++
+    "Start $if test.flag$" ++
 	"then branch" ++
         "$else$" ++
 	"else branch"++

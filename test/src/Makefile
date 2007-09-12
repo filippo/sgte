@@ -8,6 +8,7 @@ EBIN_FILES = ../ebin/eunit_compile.beam \
 		../ebin/eunit_render_map.beam \
 		../ebin/eunit_quiet.beam \
 		../ebin/eunit_gettext.beam \
+		../ebin/eunit_nested.beam \
 		../ebin/run_tests.beam
 
 

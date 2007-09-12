@@ -4,10 +4,11 @@
 
 run_tests() ->
     run_tests([eunit_compile, 
-                     eunit_render, 
-                     eunit_render_map,
-                     eunit_quiet,
-                     eunit_gettext]).
+               eunit_render, 
+               eunit_render_map,
+               eunit_quiet,
+               eunit_gettext,
+               eunit_nested]).
 
 run_tests([]) ->
     done;

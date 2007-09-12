@@ -1,6 +1,8 @@
--module(eunit_render).
+-module(eunit_nested).
 
 -include_lib("eunit/include/eunit.hrl").
+
+-record(test_rec, {col1, col2, col3}).
 
 %%--------------------
 %%
@@ -9,47 +11,53 @@
 %%--------------------
 %%
 %% Render Test
-%%    
-string_test_() ->
-    Str = "This is a test:\n" ++
-	"$testFun()$ followed by $testData$ and unicode characters  àèìòù",
-    {ok, Compiled} = sgte:compile(Str),
-    Res = sgte:render(Compiled, data()),
-    ResultStr = "This is a test:\n" ++
-	"foo, bar, baz followed by my test data with unicode characters: àèìòù and unicode characters  àèìòù",
-    %% error test
-    Str2 = "This is a test:\n" ++
-	"$testFun()$ followed by $testData$ and unicode chars àèìòù",
-    {ok, Compiled2} = sgte:compile(Str2),
-    Res2 = sgte:render(Compiled2, []),
-    ResultStr2 = "This is a test:\n" ++
-	"[SGTE Warning: template: attribute - key 'testFun()' not found on line 2] followed by [SGTE Warning: template: attribute - key testData not found on line 2] and unicode chars àèìòù",
-    [?_assert(Res =:= ResultStr),
-     ?_assert(Res2 =:= ResultStr2)].
+%%
+multi_attr_test_() ->
+    {ok, C} = sgte:compile("$foo.bar.baz$"),
+    Res = sgte:render(C, [{foo, [{bar, [{baz, "foo, bar and baz"}]}]}]),
+    ResultStr = "foo, bar and baz",
+    ?_assert(Res =:= ResultStr).
 
+record_test_() ->
+    Rec = #test_rec{col1="foo", col2="bar", col3="baz"},
+    {ok, C} = sgte:compile("$test_rec.col1$, $test_rec.col2$ and $test_rec.col3$"),
+    Res = sgte:render(C, [sgte:rec_to_name_kv(Rec, record_info(fields, test_rec))]),
+    ResultStr = "foo, bar and baz",
+    ?_assert(Res =:= ResultStr).
+
+nested_record_test_() ->
+    Rec2 = sgte:rec_to_kv(#test_rec{col1="foo", col2="bar", col3="baz"},
+                          record_info(fields, test_rec)),
+    Rec = #test_rec{col1=Rec2},
+    {ok, C} = sgte:compile("$test_rec.col1.col1$, $test_rec.col1.col2$ and $test_rec.col1.col3$"),
+    Res = sgte:render(C, [sgte:rec_to_name_kv(Rec, record_info(fields, test_rec))]),
+    ResultStr = "foo, bar and baz",
+    ?_assert(Res =:= ResultStr).
+    
 include_test_() ->
     {ok, C1} = sgte:compile("bar"),
-    {ok, C2} = sgte:compile("foo $include tmpl$ baz"),
-    Res = sgte:render(C2, [{tmpl, C1}]),
+    {ok, C2} = sgte:compile("foo $include tmpl.bar$ baz"),
+    Res = sgte:render(C2, [{tmpl, [{bar, C1}]}]),
     ResultStr = "foo bar baz",
     ?_assert(Res =:= ResultStr).
 
 apply_test_() ->
     F = fun(L) -> lists:nth(2, L) end,
-    {ok, C} = sgte:compile("foo $apply second myList$ baz"),
-    Res = sgte:render(C, [{second, F}, {myList, ["1", "2", "3"]}]),
+    {ok, C} = sgte:compile("foo $apply list.second myList$ baz"),
+    Res = sgte:render(C, [{list, [{second, F}]}, 
+                          {myList, ["1", "2", "3"]}]),
     ResultStr = "foo 2 baz",
     ?_assert(Res =:= ResultStr).
 
 simpleif_test_() ->
     {ok, C} = sgte:compile(simple_if()),
-    DThen = [{test, true}],
-    DElse1 = [{test, false}],
-    DElse2 = [{test, []}],
-    DElse3 = [{test, ""}],
-    DElse4 = [{test, {}}],
-    DElse5 = [{test, 0}],
-    RThen = sgte:render(C, DThen),
+    DThen =  [{test, [{flag, true}]}],
+    DElse1 = [{test, [{flag, false}]}],
+    DElse2 = [{test, [{flag, []}]}],
+    DElse3 = [{test, [{flag, ""}]}],
+    DElse4 = [{test, [{flag, {}}]}],
+    DElse5 = [{test, [{flag, 0}]}],
+    RThen  = sgte:render(C, DThen),
     RElse1 = sgte:render(C, DElse1),
     RElse2 = sgte:render(C, DElse2),
     RElse3 = sgte:render(C, DElse3),
@@ -57,12 +65,12 @@ simpleif_test_() ->
     RElse5 = sgte:render(C, DElse5),
     ThenStr = "Start then branch",
     ElseStr =  "Start else branch",
-    [?_assert(RThen =:= ThenStr),
-     ?_assert(RElse1 =:= ElseStr),
-     ?_assert(RElse2 =:= ElseStr),
-     ?_assert(RElse3 =:= ElseStr),
-     ?_assert(RElse4 =:= ElseStr),
-     ?_assert(RElse5 =:= ElseStr)].
+    [?_assertMatch(RThen, ThenStr),
+     ?_assertMatch(RElse1, ElseStr),
+     ?_assertMatch(RElse2, ElseStr),
+     ?_assertMatch(RElse3, ElseStr),
+     ?_assertMatch(RElse4, ElseStr),
+     ?_assertMatch(RElse5, ElseStr)].
 
 simpleif_no_test_test_() ->
     {ok, C} = sgte:compile(simple_if()),
@@ -136,7 +144,7 @@ js_support_test_() ->
 %%--------------------
 %% Template String
 simple_if() ->
-    "Start $if test$" ++
+    "Start $if test.flag$" ++
 	"then branch" ++
         "$else$" ++
 	"else branch"++
@@ -166,10 +174,5 @@ tmpl_fun() ->
 
 
 %% Test Data
-data() ->
-    D1 = dict:new(),
-    D2 = dict:store('testFun()', "foo, bar, baz", D1),
-    dict:store('testData', "my test data with unicode characters: àèìòù", D2).
-
 mountainList() ->
     ["Monte Bianco", "Cerro Torre", "Mt. Everest", "Catinaccio"].
