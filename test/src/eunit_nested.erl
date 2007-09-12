@@ -80,61 +80,19 @@ simpleif_no_test_test_() ->
 if_test_() ->
     {ok, Compiled} = sgte:compile(if_string()),
     NameL = mountainList(),
-    Data1 = [{testNames, true},
+    Data1 = [{test, [{names, true}]},
 	    {nameList, NameL}],
-    Data2 = [{testNames, false},
+    Data2 = [{test, [{names, false}]},
 	    {noName, fun no_name/1}],
     Res1 = sgte:render(Compiled, Data1),
     Res2 = sgte:render(Compiled, Data2),
     [?_assert(Res1 =:= "Hello! Some Mountains: Monte Bianco, Cerro Torre, Mt. Everest, Catinaccio Bye Bye."),
      ?_assert(Res2 =:= "Hello! No Name Found Bye Bye.")].    
-    
-fif_test_() ->
-    {ok, Compiled} = sgte:compile(if_string()),
-    NameL = mountainList(),
-    Data = [{testNames, check_names(NameL)},
-	    {noName, fun no_name/1},
-	    {nameList, NameL}],
-    Res = sgte:render(Compiled, Data),
-    {ok, Compiled2} = sgte:compile(if_string()),
-    D1 = dict:new(),
-    D2 = dict:store('testNames', check_names([]), D1),
-    D3 = dict:store('noName', fun no_name/1, D2),
-    D4 = dict:store('nameList', mountainList(), D3),
-    Res2 = sgte:render(Compiled2, D4),
-    [?_assert(Res =:=
-              "Hello! Some Mountains: Monte Bianco, Cerro Torre, Mt. Everest, Catinaccio Bye Bye."),
-     ?_assert(Res2 =:= "Hello! No Name Found Bye Bye.")].
-
-nested_fif_test_() ->
-    {ok, Compiled} = sgte:compile(nested_if_string()),
-    NameL = mountainList(),
-    D1 = dict:new(),
-    D2 = dict:store('testNames', check_names(NameL), D1),
-    D3 = dict:store('noName', fun no_name/1, D2),
-    D4 = dict:store('nameList', NameL, D3),
-    Res = sgte:render(Compiled, D4),
-    ?_assert(Res =:= "Some Mountains: Monte Bianco, Cerro Torre, Mt. Everest, Catinaccio").
-
-% test callable attribute
-fun_test_() ->
-    MyF = fun(Data) ->
-		  {ok, V} = dict:find(foo, Data),
-		  "TEST: " ++ V
-	  end,
-    {ok, CF} = sgte:compile(tmpl_fun()),
-    Res = sgte:render(CF, [{foo, "foooo"}, {callme, MyF}]),
-    ?_assert(Res =:= "aaaa TEST: foooo bbb").
-
-%test on a non existent file
-file_test_() ->
-    Res = sgte:compile_file("myfile.tmpl"),
-    ?_assert(Res =:= {error, enoent}).
 
 js_support_test_() ->
-    {ok, CF} = sgte:compile("$('someId') and an $attr$ and $('anotherId')"),
-    Res = sgte:render(CF, [{attr, "attribute"}]),
-    ?_assert(Res =:= "$('someId') and an attribute and $('anotherId')").
+    {ok, CF} = sgte:compile("$('someId') and a $nested.attr$ and $('anotherId')"),
+    Res = sgte:render(CF, [{nested, [{attr, "nested attribute"}]}]),
+    ?_assert(Res =:= "$('someId') and a nested attribute and $('anotherId')").
 
 
 %%--------------------
@@ -151,7 +109,7 @@ simple_if() ->
 	"$end if$".
 
 if_string() ->
-    "Hello! $if testNames$" ++
+    "Hello! $if test.names$" ++
 	"Some Mountains: $join:{, } nameList$" ++
         "$else$" ++
 	"$noName$$end if$" ++ " Bye Bye.".
