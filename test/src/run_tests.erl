@@ -3,13 +3,16 @@
 -export([run_tests/0, run_tests/1]).
 
 run_tests() ->
-    run_tests([sgte_test_compile, 
-	       sgte_test_render, 
-	       sgte_test_map, 
-	       sgte_test_quiet,
-	       gettext_test]).
+    run_tests([eunit_compile, 
+               eunit_render, 
+               eunit_render_map,
+               eunit_quiet,
+               eunit_gettext,
+               eunit_nested]).
+
 run_tests([]) ->
     done;
-run_tests([H|T]) ->
-    sgeunit:run(H, {verbose}),
+run_tests([M|T]) ->
+    io:format("Running ~p~n", [M]),
+    M:test(),
     run_tests(T).

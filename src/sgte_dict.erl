@@ -27,7 +27,13 @@
 %%%-------------------------------------------------------------------
 -module(sgte_dict).
 
--export([rfind/2, find/2, store/3, merge/3, from_list/1, rec_to_kv/2]).
+-export([rfind/2, 
+         find/2, 
+         store/3, 
+         merge/3, 
+         from_list/1, 
+         rec_to_name_kv/2,
+         rec_to_kv/2]).
 
 %% recursive find
 rfind([Key], Dict) ->
@@ -59,7 +65,7 @@ merge(Fun, Dict1, Dict2) ->
 from_list(List) ->
     dict:from_list(List).
 
-rec_to_kv(RecordTuple, Keys) ->
+rec_to_name_kv(RecordTuple, Keys) ->
     [Name|Values] = tuple_to_list(RecordTuple),
     case length(Values) =:= length(Keys) of
         true ->
@@ -73,3 +79,16 @@ rec_to_kv(RecordTuple, Keys) ->
             end
     end.
     
+rec_to_kv(RecordTuple, Keys) ->
+    [_Name|Values] = tuple_to_list(RecordTuple),
+    case length(Values) =:= length(Keys) of
+        true ->
+            lists:zip(Keys, Values);
+        false ->
+            case length(Values) > length(Keys) of
+                true ->
+                    {error, not_enough_keys};
+                _ ->
+                    {error, too_much_keys}
+            end
+    end.

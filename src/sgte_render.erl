@@ -116,7 +116,7 @@ render_final(Term) ->
 %% @end
 %%--------------------------------------------------------------------
 render_element({attribute, AttrList, Line}, Data) ->
-    case get_value2(AttrList, Data, attribute) of
+    case get_value(AttrList, Data, attribute) of
 	{error, X} ->
 	    on_error(fun empty_string/0, Data, X, Line);
 	Value ->
@@ -140,12 +140,12 @@ render_element({include, Tmpl, Line}, Data) -> %% include template passing all d
 	    render(Compiled, Data)
     end;
 
-render_element({apply, {Callable, Var}, Line}, Data) -> %% apply first element to Var
+render_element({apply, {Callable, VarList}, Line}, Data) -> %% apply first element to VarList
     case get_value(Callable, Data, apply) of
 	{error, X} ->
 	    on_error(fun empty_string/0, Data, X, Line);
 	ToCall ->
-	    case get_value(Var, Data, apply) of
+	    case get_value(VarList, Data, apply) of
 		{error, X} ->
 		    on_error(fun empty_string/0, Data, X, Line);
 		Value ->
@@ -316,14 +316,14 @@ render_error({error, {TmplEl, ErrMsg}, {line, LineNo}}) when is_list(ErrMsg) ->
 %% Where is used to return a more desciptive error.
 %% @end
 %%--------------------------------------------------------------------
-get_value(Key, Dict, Where) ->
+get_value(Key, Dict, Where) when is_atom(Key) ->
     case sgte_dict:find(Key, Dict) of
 	{ok, V} ->
 	    V;
 	error ->
 	    {error, {Where, Key, not_found}}
-    end.
-get_value2(KeyList, Dict, Where) ->
+    end;
+get_value(KeyList, Dict, Where) ->
     case sgte_dict:rfind(KeyList, Dict) of
 	{ok, V} ->
 	    V;

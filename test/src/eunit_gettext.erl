@@ -1,12 +1,6 @@
--module(gettext_test).
+-module(eunit_gettext).
 
--export([setup_test/0]).
--export([test_compile/0]).
--export([test_simple_it/0, 
-	 test_simple_se/0, 
-	 test_simple_en/0, 
-	 test_simple_undef/0, 
-	 test_no_lc/0]).
+-include_lib("eunit/include/eunit.hrl").
 
 %%--------------------
 %%
@@ -15,7 +9,7 @@
 %%--------------------
 
 %% Setup Tests
-setup_test() ->
+setup() ->
     try
 	gettext_server:start(),
 	{_, SeBin} = file:read_file("../priv/gettext_test/swedish.po"),
@@ -28,36 +22,43 @@ setup_test() ->
     end.
 
 %% Test Compile
-test_compile() ->
+compile_test_() ->
     {ok, C} = sgte:compile(simple()),
-    sgeunit:assert_equal([{gettext, "Hello World", 1}], C).
+    ?_assert(C =:= [{gettext, "Hello World", 1}]).
 
 %% Test Render
-test_simple_it() ->
+do_test_() ->
+    {setup, fun setup/0, [fun simple_it/0,
+                          fun simple_se/0,
+                          fun simple_en/0,
+                          fun simple_undef/0,
+                          fun no_lc/0]}.
+
+simple_it() ->
     {ok, C} = sgte:compile(simple()),
     Res = sgte:render(C, [], [{gettext_lc, "it"}]),
-    sgeunit:assert_equal("Ciao Mondo", Res).
+    ?_assert("Ciao Mondo" =:= Res).
 
-test_simple_se() ->
+simple_se() ->
     {ok, C} = sgte:compile(simple()),
     Res = sgte:render(C, [], [{gettext_lc, "se"}]),
-    sgeunit:assert_equal("Hej V\344rld", Res).
+    ?_assert("Hej V\344rld" =:= Res).
 
-test_simple_en() ->
+simple_en() ->
     {ok, C} = sgte:compile(simple()),
     Res = sgte:render(C, [], [{gettext_lc, "en"}]),
-    sgeunit:assert_equal("Hello World", Res).
+    ?_assert("Hello World" =:= Res).
 
-test_simple_undef() ->
+simple_undef() ->
     {ok, C} = sgte:compile(simple()),
     Res = sgte:render(C, [{gettext_lc, "aa"}], [quiet]),
-    sgeunit:assert_equal("Hello World", Res).
+    ?_assert("Hello World" =:= Res).
 
 %% No language code passed
-test_no_lc() ->
+no_lc() ->
     {ok, C} = sgte:compile(simple()),
     Res = sgte:render(C, [], [quiet]),
-    sgeunit:assert_equal("Hello World", Res).
+    ?_assert("Hello World" =:= Res).
 
 %%--------------------
 %%

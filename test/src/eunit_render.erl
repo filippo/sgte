@@ -1,13 +1,6 @@
--module(sgte_test_render).
+-module(eunit_render).
 
--export([test_multi_attr/0, test_record_access/0]).
--export([test_string/0, test_string_err/0, test_include/0, test_apply/0]).
--export([test_simpleif/0, test_simpleif_no_test/0]).
--export([test_fif/0, test_fif2/0, test_nested_fif/0, test_if/0]).
--export([test_fun/0, test_file/0]).
--export([test_js_support/0]).
-
--record(test_rec, {col1, col2, col3}).
+-include_lib("eunit/include/eunit.hrl").
 
 %%--------------------
 %%
@@ -16,53 +9,39 @@
 %%--------------------
 %%
 %% Render Test
-%%
-test_multi_attr() ->
-    {ok, C} = sgte:compile("$foo.bar.baz$"),
-    Res = sgte:render(C, [{foo, [{bar, [{baz, "foo, bar and baz"}]}]}]),
-    ResultStr = "foo, bar and baz",
-    sgeunit:assert_equal(Res, ResultStr).
-
-test_record_access() ->
-    Rec = #test_rec{col1="foo", col2="bar", col3="baz"},
-    {ok, C} = sgte:compile("$test_rec.col1$, $test_rec.col2$ and $test_rec.col3$"),
-    Res = sgte:render(C, [sgte:rec_to_kv(Rec, record_info(fields, test_rec))]),
-    ResultStr = "foo, bar and baz",
-    sgeunit:assert_equal(Res, ResultStr).
-    
-test_string() ->
+%%    
+string_test_() ->
     Str = "This is a test:\n" ++
 	"$testFun()$ followed by $testData$ and unicode characters  àèìòù",
     {ok, Compiled} = sgte:compile(Str),
     Res = sgte:render(Compiled, data()),
     ResultStr = "This is a test:\n" ++
 	"foo, bar, baz followed by my test data with unicode characters: àèìòù and unicode characters  àèìòù",
-    sgeunit:assert_equal(Res, ResultStr).
-
-test_string_err() ->
-    Str = "This is a test:\n" ++
+    %% error test
+    Str2 = "This is a test:\n" ++
 	"$testFun()$ followed by $testData$ and unicode chars àèìòù",
-    {ok, Compiled} = sgte:compile(Str),
-    Res = sgte:render(Compiled, []),
-    ResultStr = "This is a test:\n" ++
+    {ok, Compiled2} = sgte:compile(Str2),
+    Res2 = sgte:render(Compiled2, []),
+    ResultStr2 = "This is a test:\n" ++
 	"[SGTE Warning: template: attribute - key 'testFun()' not found on line 2] followed by [SGTE Warning: template: attribute - key testData not found on line 2] and unicode chars àèìòù",
-    sgeunit:assert_equal(Res, ResultStr).
+    [?_assert(Res =:= ResultStr),
+     ?_assert(Res2 =:= ResultStr2)].
 
-test_include() ->
+include_test_() ->
     {ok, C1} = sgte:compile("bar"),
     {ok, C2} = sgte:compile("foo $include tmpl$ baz"),
     Res = sgte:render(C2, [{tmpl, C1}]),
     ResultStr = "foo bar baz",
-    sgeunit:assert_equal(Res, ResultStr).
+    ?_assert(Res =:= ResultStr).
 
-test_apply() ->
+apply_test_() ->
     F = fun(L) -> lists:nth(2, L) end,
     {ok, C} = sgte:compile("foo $apply second myList$ baz"),
     Res = sgte:render(C, [{second, F}, {myList, ["1", "2", "3"]}]),
     ResultStr = "foo 2 baz",
-    sgeunit:assert_equal(Res, ResultStr).
+    ?_assert(Res =:= ResultStr).
 
-test_simpleif() ->
+simpleif_test_() ->
     {ok, C} = sgte:compile(simple_if()),
     DThen = [{test, true}],
     DElse1 = [{test, false}],
@@ -78,19 +57,19 @@ test_simpleif() ->
     RElse5 = sgte:render(C, DElse5),
     ThenStr = "Start then branch",
     ElseStr =  "Start else branch",
-    [sgeunit:assert_equal(RThen, ThenStr),
-     sgeunit:assert_equal(RElse1, ElseStr),
-     sgeunit:assert_equal(RElse2, ElseStr),
-     sgeunit:assert_equal(RElse3, ElseStr),
-     sgeunit:assert_equal(RElse4, ElseStr),
-     sgeunit:assert_equal(RElse5, ElseStr)].
+    [?_assert(RThen =:= ThenStr),
+     ?_assert(RElse1 =:= ElseStr),
+     ?_assert(RElse2 =:= ElseStr),
+     ?_assert(RElse3 =:= ElseStr),
+     ?_assert(RElse4 =:= ElseStr),
+     ?_assert(RElse5 =:= ElseStr)].
 
-test_simpleif_no_test() ->
+simpleif_no_test_test_() ->
     {ok, C} = sgte:compile(simple_if()),
     RElse = sgte:render(C, [], [quiet]),
-    sgeunit:assert_equal(RElse, "Start else branch").
+    ?_assert(RElse =:= "Start else branch").
 
-test_if() ->
+if_test_() ->
     {ok, Compiled} = sgte:compile(if_string()),
     NameL = mountainList(),
     Data1 = [{testNames, true},
@@ -99,28 +78,27 @@ test_if() ->
 	    {noName, fun no_name/1}],
     Res1 = sgte:render(Compiled, Data1),
     Res2 = sgte:render(Compiled, Data2),
-    [sgeunit:assert_equal(Res1, "Hello! Some Mountains: Monte Bianco, Cerro Torre, Mt. Everest, Catinaccio Bye Bye."),
-     sgeunit:assert_equal(Res2, "Hello! No Name Found Bye Bye.")].    
+    [?_assert(Res1 =:= "Hello! Some Mountains: Monte Bianco, Cerro Torre, Mt. Everest, Catinaccio Bye Bye."),
+     ?_assert(Res2 =:= "Hello! No Name Found Bye Bye.")].    
     
-test_fif() ->
+fif_test_() ->
     {ok, Compiled} = sgte:compile(if_string()),
     NameL = mountainList(),
     Data = [{testNames, check_names(NameL)},
 	    {noName, fun no_name/1},
 	    {nameList, NameL}],
     Res = sgte:render(Compiled, Data),
-    sgeunit:assert_equal(Res, "Hello! Some Mountains: Monte Bianco, Cerro Torre, Mt. Everest, Catinaccio Bye Bye.").
-
-test_fif2() ->
-    {ok, Compiled} = sgte:compile(if_string()),
+    {ok, Compiled2} = sgte:compile(if_string()),
     D1 = dict:new(),
     D2 = dict:store('testNames', check_names([]), D1),
     D3 = dict:store('noName', fun no_name/1, D2),
     D4 = dict:store('nameList', mountainList(), D3),
-    Res = sgte:render(Compiled, D4),
-    sgeunit:assert_equal(Res, "Hello! No Name Found Bye Bye.").
+    Res2 = sgte:render(Compiled2, D4),
+    [?_assert(Res =:=
+              "Hello! Some Mountains: Monte Bianco, Cerro Torre, Mt. Everest, Catinaccio Bye Bye."),
+     ?_assert(Res2 =:= "Hello! No Name Found Bye Bye.")].
 
-test_nested_fif() ->
+nested_fif_test_() ->
     {ok, Compiled} = sgte:compile(nested_if_string()),
     NameL = mountainList(),
     D1 = dict:new(),
@@ -128,27 +106,27 @@ test_nested_fif() ->
     D3 = dict:store('noName', fun no_name/1, D2),
     D4 = dict:store('nameList', NameL, D3),
     Res = sgte:render(Compiled, D4),
-    sgeunit:assert_equal(Res, "Some Mountains: Monte Bianco, Cerro Torre, Mt. Everest, Catinaccio").
+    ?_assert(Res =:= "Some Mountains: Monte Bianco, Cerro Torre, Mt. Everest, Catinaccio").
 
 % test callable attribute
-test_fun() ->
+fun_test_() ->
     MyF = fun(Data) ->
 		  {ok, V} = dict:find(foo, Data),
 		  "TEST: " ++ V
 	  end,
     {ok, CF} = sgte:compile(tmpl_fun()),
     Res = sgte:render(CF, [{foo, "foooo"}, {callme, MyF}]),
-    sgeunit:assert_equal(Res, "aaaa TEST: foooo bbb").
+    ?_assert(Res =:= "aaaa TEST: foooo bbb").
 
 %test on a non existent file
-test_file() ->
+file_test_() ->
     Res = sgte:compile_file("myfile.tmpl"),
-    sgeunit:assert_equal(Res, {error, enoent}).
+    ?_assert(Res =:= {error, enoent}).
 
-test_js_support() ->
+js_support_test_() ->
     {ok, CF} = sgte:compile("$('someId') and an $attr$ and $('anotherId')"),
     Res = sgte:render(CF, [{attr, "attribute"}]),
-    sgeunit:assert_equal(Res, "$('someId') and an attribute and $('anotherId')").
+    ?_assert(Res =:= "$('someId') and an attribute and $('anotherId')").
 
 
 %%--------------------

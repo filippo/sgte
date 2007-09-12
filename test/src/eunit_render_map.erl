@@ -1,8 +1,6 @@
--module(sgte_test_map).
+-module(eunit_render_map).
 
--export([test_map/0, test_mapl/0, test_map_on_empty_list/0, test_mmap/0, test_mapj/0]).
--export([test_imap/0,test_imap2/0, test_imap_name_place/0]).
--export([test_imap_js/0, test_imap_comma/0]).
+-include_lib("eunit/include/eunit.hrl").
 
 %%--------------------
 %%
@@ -12,15 +10,19 @@
 %%
 %% Render Test
 %%
-test_map() ->
+map_test_() ->
     {ok, PrintM} = sgte:compile(print_mountain()),
     {ok, PrintMList} = sgte:compile(print_mountains()),
     Data = [{nameList, mountains()}, {printMountain, PrintM}],
     Res = sgte:render(PrintMList, Data),
     Rendered = "<ul><li><b>Monte Bianco</b></li><li><b>Cerro Torre</b></li><li><b>Mt. Everest</b></li><li><b>Catinaccio</b></li></ul>",
-    sgeunit:assert_equal(Res, Rendered).
+    Data2 = [{nameList, empty()}, {printMountain, PrintM}],
+    Res2 = sgte:render(PrintMList, Data2),
+    Rendered2 = "<ul></ul>",
+    [?_assert(Res =:= Rendered), 
+     ?_assert(Res2 =:= Rendered2)].
 
-test_mapl() ->
+mapl_test_() ->
     {ok, RowTmpl} = sgte:compile("- $attr$\n"),
     {ok, MapLTmpl} = sgte:compile("$mapl rowTmpl nameList$"),
     Data = [{rowTmpl, RowTmpl}, {nameList, mountain_list()}],
@@ -29,9 +31,9 @@ test_mapl() ->
 	"- Cerro Torre\n"
 	"- Mt. Everest\n"
 	"- Catinaccio\n",
-    sgeunit:assert_equal(Res, Rendered).
+    ?_assert(Res =:= Rendered).
 
-test_mapj() ->
+mapj_test_() ->
     {ok, RowTmpl} = sgte:compile("- $el$"),
     {ok, Separator} = sgte:compile(", \n"),
     {ok, MapJ} = sgte:compile("$mapj row values sep$"),
@@ -39,17 +41,9 @@ test_mapj() ->
 	    {values, [{el, "foo"}, {el, "bar"}, {el, "baz"}]}],
     Res = sgte:render(MapJ, Data),
     Rendered = "- foo, \n- bar, \n- baz",
-    sgeunit:assert_equal(Res, Rendered).
+    ?_assert(Res =:= Rendered).
 
-test_map_on_empty_list() ->
-    {ok, PrintM} = sgte:compile(print_mountain()),
-    {ok, PrintMList} = sgte:compile(print_mountains()),
-    Data = [{nameList, empty()}, {printMountain, PrintM}],
-    Res = sgte:render(PrintMList, Data),
-    Rendered = "<ul></ul>",
-    sgeunit:assert_equal(Res, Rendered).
-
-test_mmap() ->
+mmap_test_() ->
     {ok, PrintMList} = sgte:compile(print_mmap()),
     {ok, R1} = sgte:compile(row1()),
     {ok, R2} = sgte:compile(row2()),
@@ -63,9 +57,9 @@ test_mmap() ->
 	"<li class=\"riga1\"><b>Mt. Everest</b></li>"++
 	"<li class=\"riga2\"><b>Catinaccio</b></li>"++
 	"</ul>",
-    sgeunit:assert_equal(Res, Rendered).
+    ?_assert(Res =:= Rendered).
 
-test_imap() ->
+imap_test_() ->
     {ok, PrintMList} = sgte:compile(print_inline_mountains()),
     Data = [{nameList, mountains()}, {myClass, "listItem"}],
     Res = sgte:render(PrintMList, Data),
@@ -75,52 +69,47 @@ test_imap() ->
 	"<li class=\"listItem\"><b>Mt. Everest</b></li>"++
 	"<li class=\"listItem\"><b>Catinaccio</b></li>"++
 	"</ul>",
-    sgeunit:assert_equal(Res, Rendered).
-
-test_imap_name_place() ->
-    {ok, PrintMList} = sgte:compile(print_inline_mountain_place()),
-    Data = [{nameList, mountains2()}],
-    Res = sgte:render(PrintMList, Data),
-    Rendered = "<ul>"++
+    {ok, PrintMList2} = sgte:compile(print_inline_mountain_place()),
+    Data2 = [{nameList, mountains2()}],
+    Res2 = sgte:render(PrintMList2, Data2),
+    Rendered2 = "<ul>"++
 	"<li><b>Monte Bianco</b> - Alps</li>"++
 	"<li><b>Cerro Torre</b> - Patagonia</li>"++
 	"<li><b>Mt. Everest</b> - Himalaya</li>"++
 	"<li><b>Catinaccio</b> - Dolomites</li>"++
 	"</ul>",
-    sgeunit:assert_equal(Res, Rendered).
-
-test_imap2() ->
-    {ok, PrintMList} = sgte:compile(print_inline_mountains2()),
-    Data = [{nameList, mountains()}, {myClass, "listItem"},  {myClass2, "listItem2"}],
-    Res = sgte:render(PrintMList, Data),
-    Rendered = "<ul>\n"++
+    {ok, PrintMList3} = sgte:compile(print_inline_mountains2()),
+    Data3 = [{nameList, mountains()}, {myClass, "listItem"},  {myClass2, "listItem2"}],
+    Res3 = sgte:render(PrintMList3, Data3),
+    Rendered3 = "<ul>\n"++
 	"<li class=\"listItem\"><b>Monte Bianco</b></li>\n"++
 	"<li class=\"listItem\"><b>Cerro Torre</b></li>\n"++
 	"<li class=\"listItem\"><b>Mt. Everest</b></li>\n"++
 	"<li class=\"listItem\"><b>Catinaccio</b></li>\n"++
 	"</ul>",
-    sgeunit:assert_equal(Res, Rendered).
-
-test_imap_js() ->
+    %% test bug in js code 
     {ok, C} = sgte:compile(imap_js()),
-    Rendered = sgte:render(C, [{owners, 
+    RenderedJs = sgte:render(C, [{owners, 
 				   [{owner, "tobbe"}, 
 				    {owner, "magnus"}
 				   ]}]
 			     ),
-    Result = "\"#tobbe\": function(t) {save_owner(\"tobbe\",t.id);}, "++
+    ResultJs = "\"#tobbe\": function(t) {save_owner(\"tobbe\",t.id);}, "++
 	"\"#magnus\": function(t) {save_owner(\"magnus\",t.id);}, ",
-    sgeunit:assert_equal(Rendered, Result).
+    %% test comma bug
+    {ok, Comma} = sgte:compile(imap_comma()),
+    RendComma = sgte:render(Comma, [{attrList, 
+                                     [{attr, "First Attribute"}, 
+                                      {attr, "and the Second"}
+                                     ]}]
+                           ),
+    ResComma = "First Attribute, and the Second, ",
+    [?_assert(Res =:= Rendered), 
+     ?_assert(Res2 =:= Rendered2),
+     ?_assert(Res3 =:= Rendered3),
+     ?_assert(ResultJs =:= RenderedJs),
+     ?_assert(ResComma =:= RendComma)].
 
-test_imap_comma() ->
-    {ok, C} = sgte:compile(imap_comma()),
-    Rendered = sgte:render(C, [{attrList, 
-				   [{attr, "First Attribute"}, 
-				    {attr, "and the Second"}
-				   ]}]
-			     ),
-    Result = "First Attribute, and the Second, ",
-    sgeunit:assert_equal(Rendered, Result).
 
 %%--------------------
 %%
