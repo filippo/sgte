@@ -119,15 +119,16 @@ render_element({attribute, AttrList, Line}, Data) ->
     case get_value(AttrList, Data, attribute) of
 	{error, X} ->
 	    on_error(fun empty_string/0, Data, X, Line);
-	Value ->
-	    render_final(Value, Data)
+        V ->
+            printable(V, fun(El) -> render_final(El, Data) end)
     end;
 render_element({join, {Separator, Term}, Line}, Data) ->
     case get_value(Term, Data, join) of
 	{error, X} ->
 	    on_error(fun empty_string/0, Data, X, Line);
 	ValueList ->
-	    Concat = lists:flatten([X++Separator || X <- ValueList]),
+	    Concat = lists:flatten([printable(X, fun(El) -> El end)++Separator 
+                                    || X <- ValueList]),
 	    Value = string:sub_string(Concat, 1, length(Concat)-length(Separator)),
 	    Value
     end;
@@ -149,7 +150,7 @@ render_element({apply, {Callable, VarList}, Line}, Data) -> %% apply first eleme
 		{error, X} ->
 		    on_error(fun empty_string/0, Data, X, Line);
 		Value ->
-		    render_final(ToCall, Value)
+		    printable(ToCall(Value), fun(El) -> El end)
 	    end
     end;
 
@@ -384,3 +385,17 @@ gettext_lc(Options) ->
 	false ->
 	    {error, {gettext, gettext_lc, not_found}}
     end.
+
+%%--------------------------------------------------------------------
+%% @spec printable(Term::term()) -> string()
+%%--------------------------------------------------------------------
+printable(Term, _Else) when is_integer(Term) ->
+    integer_to_list(Term);
+printable(Term, _Else) when is_float(Term) ->
+    float_to_list(Term);
+printable(Term, _Else) when is_atom(Term) ->
+    atom_to_list(Term);
+printable(Term, _Else) when is_binary(Term) ->
+    binary_to_list(Term);
+printable(Term, Else) ->
+    Else(Term).
