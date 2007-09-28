@@ -53,6 +53,8 @@ rfind([H|T], Dict) ->
             ?MODULE:rfind(T, D)
     end.
 
+find(Key, Dict) when is_list(Dict) ->
+    dict:find(Key, dict:from_list(Dict));
 find(Key, Dict) ->
     dict:find(Key, Dict).
 
