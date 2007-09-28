@@ -16,8 +16,8 @@
 %%% 2007 S.G. Consulting srl. All Rights Reserved.
 %%%
 %%% @doc 
-%%% <p>Implements a dictionaryand a record like data structure. 
-%%% Uses the dict module and extends it to support nested dicts.</p>
+%%% <p>Implements a dictionary and a record like data structure. 
+%%% Uses ets tables.</p>
 %%%
 %%% <p>This module is the interface used to access data in the 
 %%% render phase.</p>
@@ -27,51 +27,109 @@
 %%%-------------------------------------------------------------------
 -module(sgte_dict).
 
--export([rfind/2, 
-         find/2, 
-         store/3, 
-         merge/3, 
-         from_list/1, 
+-export([parse/1,
+         parse/2,
+         is_dict/1,
+         lookup/2,
+         store/2,
+         merge/2,
          rec_to_name_kv/2,
          rec_to_kv/2]).
 
-%% recursive find
-rfind([Key], Dict) ->
-    case dict:find(Key, Dict) of
-        error ->
-            {error, Key};
-        {ok, V} ->
-            {ok, V}
-    end;
-rfind([H|T], Dict) ->
-    case dict:find(H, Dict) of
-        error ->
-            {error, H};
-        {ok, D} when is_list(D) ->
-            ?MODULE:rfind(T, dict:from_list(D));
-        {ok, D} ->
-            ?MODULE:rfind(T, D)
+%% recursively parses data and builds ets tables
+parse(Data, Options) when is_list(Data) ->
+    parse([{options, Options}|Data]);
+parse(Data, Options) ->
+    Table = parse(Data),
+    store({options, Options}, Table),
+    Table.
+
+parse(Data) ->
+    case is_dict(Data) of
+        false -> parse_kv(Data);
+        true  -> parse_dict(Data)
     end.
 
-find(Key, Dict) when is_list(Dict) ->
-    dict:find(Key, dict:from_list(Dict));
-find(Key, Dict) ->
-    dict:find(Key, Dict).
+parse_kv(Data) ->
+    Ref = io_lib:format("~b~b~b", tuple_to_list(erlang:now())),
+    Name = list_to_atom(lists:flatten(Ref)),
+    Table = ets:new(Name, [set, public]),
+    parse_kv(Data, Table).
 
-store(Key, Value, Dict) ->
-    dict:store(Key, Value, Dict).
+parse_kv([], Table) ->
+    Table;
+parse_kv([{Key, [{_K, _V}|_R]=Value}|Rest], Table) ->
+    Tid = parse_kv(Value),
+    ets:insert(Table, {Key, {ets_table, Tid}}),
+    parse_kv(Rest, Table);
+parse_kv([{Key, Value}|Rest], Table) ->
+    case is_dict(Value) of
+        true ->
+            Tid = parse_kv(dict:to_list(Value)),
+            ets:insert(Table, {Key, {ets_table, Tid}});
+        false ->
+            ets:insert(Table, {Key, Value})
+    end,
+    parse_kv(Rest, Table).
 
-merge(Fun, Dict1, Dict2) ->
-    dict:merge(Fun, Dict1, Dict2).
+parse_dict(Data) ->
+    Ref = io_lib:format("~b~b~b", tuple_to_list(erlang:now())),
+    Name = list_to_atom(lists:flatten(Ref)),
+    Table = ets:new(Name, [set, public]),
+    parse_kv(dict:to_list(Data), Table).
 
-from_list(List) ->
-    dict:from_list(List).
+lookup(Key, Tab) when is_atom(Key) ->
+    case ets:lookup(Tab, Key) of
+        [] ->
+            {error, Key};
+        [{Key, V}] ->
+            {ok, V}
+    end;
+lookup([Key], Tab) ->
+    case ets:lookup(Tab, Key) of
+        [] ->
+            {error, Key};
+        [{Key, V}] ->
+            {ok, V}
+    end;
+lookup([Key|Rest], Tab) ->
+    case ets:lookup(Tab, Key) of
+        [] ->
+            {error, Key};
+        [{Key, {ets_table, Tid}}] ->
+            lookup(Rest, Tid)
+    end.
 
+store({K,V}, Tab) ->    
+    ets:insert(Tab, {K,V}),
+    Tab.
+
+merge(T1, T2) ->
+    case ets:match(T2, '$1') of
+        [] ->
+            T1;
+        Objs ->
+            [ets:insert(T1, O) || [O] <- Objs],
+            T1
+    end.
+
+%% check if a Data is an erlang dict
+is_dict(Data) when is_tuple(Data) ->
+    case element(1, Data) of
+        dict ->
+            true;
+        _ ->
+            false
+    end;
+is_dict(Data) ->
+    false.
+    
 rec_to_name_kv(RecordTuple, Keys) ->
     [Name|Values] = tuple_to_list(RecordTuple),
     case length(Values) =:= length(Keys) of
         true ->
-            {Name, lists:zip(Keys, Values)};
+            KVList = lists:zip(Keys, Values),
+            {Name, parse_kv(KVList)};
         false ->
             case length(Values) > length(Keys) of
                 true ->
@@ -85,7 +143,7 @@ rec_to_kv(RecordTuple, Keys) ->
     [_Name|Values] = tuple_to_list(RecordTuple),
     case length(Values) =:= length(Keys) of
         true ->
-            lists:zip(Keys, Values);
+            parse_kv(lists:zip(Keys, Values));
         false ->
             case length(Values) > length(Keys) of
                 true ->

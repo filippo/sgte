@@ -34,22 +34,22 @@
 %% @doc Calls render/2 passing options in the data.
 %% @end
 %%--------------------------------------------------------------------
-render(Compiled, Data, Options) when is_list(Data) ->
-    render(Compiled, [{options, Options}|Data]);
-render(Compiled, Data, Options) ->  %% Data is a sgte_dict
-    render(Compiled, sgte_dict:store(options, Options, Data)).
+render(Compiled, Data, Options) ->
+    render(Compiled, sgte_dict:parse(Data, Options)).
 
 %%--------------------------------------------------------------------
 %% @spec render(compiled(), data()) -> string()
 %% @doc Renders the compiled template and returns it
 %% @end
 %%--------------------------------------------------------------------
-render(Compiled, Data) when is_list(Data) ->
-    render(Compiled, sgte_dict:from_list(Data));
 render(Compiled, Data) when is_function(Compiled) ->
-    render_final(Compiled, Data);
+    render_final(Compiled, sgte_dict:parse(Data));
+render(Compiled, Data) when is_list(Data) ->
+    PData = sgte_dict:parse(Data),
+    lists:flatten([render_element(X, PData) || X <- Compiled]);
 render(Compiled, Data) ->
-    lists:flatten([render_element(X, Data) || X <- Compiled]).
+    PData = sgte_dict:parse(Data),
+    lists:flatten([render_element(X, PData) || X <- Compiled]).
 
 %%--------------------------------------------------------------------
 %% @spec render1(compiled(), data(), {Key, Value}) -> string()
@@ -57,16 +57,16 @@ render(Compiled, Data) ->
 %% Used to render map tokens.
 %% @end
 %%--------------------------------------------------------------------
-render1(Compiled, Data, Attr) when is_list(Attr) ->
-    Data1 = sgte_dict:merge(fun(_K, _V1, V2) -> V2 end, Data, sgte_dict:from_list(Attr)),
-    lists:flatten([render_element(X, Data1) || X <- Compiled]);
+render1(Compiled, Data, {ets_table, T}) ->
+    sgte_dict:merge(Data, T),
+    lists:flatten([render_element(X, Data) || X <- Compiled]);
 render1(Compiled, Data, Attr) when is_function(Compiled) ->
     {K, V} = Attr,
     render_final(Compiled, sgte_dict:store(K, V, Data));
 render1(Compiled, Data, Attr) ->
     {K, V} = Attr,
-    Data1 = sgte_dict:store(K, V, Data),
-    lists:flatten([render_element(X, Data1) || X <- Compiled]).
+    sgte_dict:store({K, V}, Data),
+    lists:flatten([render_element(X, Data) || X <- Compiled]).
 
     
 %%--------------------------------------------------------------------
@@ -317,15 +317,8 @@ render_error({error, {TmplEl, ErrMsg}, {line, LineNo}}) when is_list(ErrMsg) ->
 %% Where is used to return a more desciptive error.
 %% @end
 %%--------------------------------------------------------------------
-get_value(Key, Dict, Where) when is_atom(Key) ->
-    case sgte_dict:find(Key, Dict) of
-	{ok, V} ->
-	    V;
-	error ->
-	    {error, {Where, Key, not_found}}
-    end;
-get_value(KeyList, Dict, Where) ->
-    case sgte_dict:rfind(KeyList, Dict) of
+get_value(KeyOrKeyList, Dict, Where) ->
+    case sgte_dict:lookup(KeyOrKeyList, Dict) of
 	{ok, V} ->
 	    V;
 	{error, Key} ->
@@ -357,7 +350,7 @@ group([H1|R1], [H2|R2], Recurring, Result) ->
 %% @end
 %%--------------------------------------------------------------------
 options(Data) ->
-    case sgte_dict:find(options, Data) of
+    case sgte_dict:lookup(options, Data) of
 	{ok, Options} ->
 	    Options;
 	_ ->
