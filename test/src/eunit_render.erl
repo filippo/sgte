@@ -111,7 +111,7 @@ nested_fif_test_() ->
 % test callable attribute
 fun_test_() ->
     MyF = fun(Data) ->
-		  {ok, V} = dict:find(foo, Data),
+		  {ok, V} = sgte_dict:lookup(foo, Data),
 		  "TEST: " ++ V
 	  end,
     {ok, CF} = sgte:compile(tmpl_fun()),
