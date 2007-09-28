@@ -34,7 +34,8 @@
          store/2,
          merge/2,
          rec_to_name_kv/2,
-         rec_to_kv/2]).
+         rec_to_kv/2,
+         dump/1]).
 
 %% recursively parses data and builds ets tables
 parse(Data, Options) when is_list(Data) ->
@@ -114,14 +115,14 @@ merge(T1, T2) ->
     end.
 
 %% check if a Data is an erlang dict
-is_dict(Data) when is_tuple(Data) ->
+is_dict(Data) when is_tuple(Data) andalso size(Data)>1  ->
     case element(1, Data) of
         dict ->
             true;
         _ ->
             false
     end;
-is_dict(Data) ->
+is_dict(_Data) ->
     false.
     
 rec_to_name_kv(RecordTuple, Keys) ->
@@ -152,3 +153,14 @@ rec_to_kv(RecordTuple, Keys) ->
                     {error, too_much_keys}
             end
     end.
+
+dump(Tab) ->
+    F = fun(Obj, Acc) ->
+                case Obj of
+                    {K, {ets_table, TId}} ->
+                        [{K, dump(TId)}|Acc];
+                    _ ->
+                        [Obj|Acc]
+                end
+        end,
+    ets:foldl(F, [], Tab).
