@@ -129,8 +129,11 @@ render_element({join, {Separator, Term}, Line}, Data) ->
 	ValueList ->
 	    Concat = lists:flatten([printable(X, fun(El) -> El end)++Separator 
                                     || X <- ValueList]),
-	    Value = string:sub_string(Concat, 1, length(Concat)-length(Separator)),
-	    Value
+            case Concat of
+                [] -> Concat;
+                _ ->
+                    string:sub_string(Concat, 1, length(Concat)-length(Separator))
+            end
     end;
 
 render_element({include, Tmpl, Line}, Data) -> %% include template passing all data

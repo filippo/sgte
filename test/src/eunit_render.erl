@@ -108,6 +108,13 @@ nested_fif_test_() ->
     Res = sgte:render(Compiled, D4),
     ?_assert(Res =:= "Some Mountains: Monte Bianco, Cerro Torre, Mt. Everest, Catinaccio").
 
+join_test_() ->
+    {ok, C} = sgte:compile("$join:{, } aList$"),
+    R1 = sgte:render(C, [{aList, ["foo", "bar", "baz"]}]),
+    R2 = sgte:render(C, [{aList, []}]),
+    [?_assert(R1 =:= "foo, bar, baz"),
+     ?_assert(R2 =:= "")].
+
 % test callable attribute
 fun_test_() ->
     MyF = fun(Data) ->
