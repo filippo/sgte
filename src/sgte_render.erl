@@ -27,8 +27,45 @@
 %%%-------------------------------------------------------------------
 -module(sgte_render).
 
--export([render/2, render/3]).
+-export([render/2, 
+         render/3, 
+         render_str/2, 
+         render_str/3, 
+         render_bin/2,
+         render_bin/3]).
 
+%%--------------------------------------------------------------------
+%% @spec render_string(compiled(), data(), options()) -> string()
+%% @doc Calls render/3 and converts the result to string.
+%% @end
+%%--------------------------------------------------------------------
+render_str(Compiled, Data, Options) ->
+    to_str(render(Compiled, Data, Options)).
+
+%%--------------------------------------------------------------------
+%% @spec render_string(compiled(), data()) -> string()
+%% @doc Calls render/2 and converts the result to string.
+%% @end
+%%--------------------------------------------------------------------
+render_str(Compiled, Data) ->
+    to_str(render(Compiled, Data)).
+
+%%--------------------------------------------------------------------
+%% @spec render_bin(compiled(), data(), options()) -> binary()
+%% @doc Calls render/3 and converts the result to binary.
+%% @end
+%%--------------------------------------------------------------------
+render_bin(Compiled, Data, Options) ->
+    to_bin(render(Compiled, Data, Options)).
+    
+%%--------------------------------------------------------------------
+%% @spec render_bin(compiled(), data()) -> binary()
+%% @doc Calls render/2 and converts the result to binary.
+%% @end
+%%--------------------------------------------------------------------
+render_bin(Compiled, Data) ->
+    to_bin(render(Compiled, Data)).
+    
 %%--------------------------------------------------------------------
 %% @spec render(compiled(), data(), options()) -> string()
 %% @doc Calls render/2 passing options in the data.
@@ -49,7 +86,7 @@ render(Compiled, Data) when is_list(Data) ->
 render(Compiled, Data) when is_function(Compiled) ->
     render_final(Compiled, Data);
 render(Compiled, Data) ->
-    lists:flatten([render_element(X, Data) || X <- Compiled]).
+    [render_element(X, Data) || X <- Compiled].
 
 %%--------------------------------------------------------------------
 %% @spec render1(compiled(), data(), {Key, Value}) -> string()
@@ -59,19 +96,46 @@ render(Compiled, Data) ->
 %%--------------------------------------------------------------------
 render1(Compiled, Data, Attr) when is_list(Attr) ->
     Data1 = sgte_dict:merge(fun(_K, _V1, V2) -> V2 end, Data, sgte_dict:from_list(Attr)),
-    lists:flatten([render_element(X, Data1) || X <- Compiled]);
+    [render_element(X, Data1) || X <- Compiled];
 render1(Compiled, Data, Attr) when is_function(Compiled) ->
     {K, V} = Attr,
     render_final(Compiled, sgte_dict:store(K, V, Data));
 render1(Compiled, Data, Attr) ->
     {K, V} = Attr,
     Data1 = sgte_dict:store(K, V, Data),
-    lists:flatten([render_element(X, Data1) || X <- Compiled]).
+    [render_element(X, Data1) || X <- Compiled].
 
     
 %%--------------------------------------------------------------------
 %%% Internal functions
 %%--------------------------------------------------------------------
+%%--------------------------------------------------------------------
+%% @spec to_str(deep_list()) -> string()
+%% @doc Gets a deep list with mixed strings and binaries. Converts
+%% everything to string and returns the flattened list.
+%% @end
+%%--------------------------------------------------------------------
+to_str(DeepL) ->
+    ToStr = fun(El) when is_binary(El) ->
+                    binary_to_list(El);
+               (El) ->
+                    El
+             end,
+    lists:flatten(lists:map(ToStr, lists:flatten(DeepL))).
+
+%%--------------------------------------------------------------------
+%% @spec to_binary(deep_list()) -> string()
+%% @doc Gets a deep list with mixed strings and binaries. Converts
+%% everything to binary and returns the flattened list.
+%% @end
+%%--------------------------------------------------------------------
+to_bin(DeepL) ->
+    ToBin = fun(El) when is_list(El) ->
+                    list_to_binary(El);
+               (El) ->
+                    El
+            end,
+    lists:flatten(lists:map(ToBin, DeepL)).
 
 %%--------------------------------------------------------------------
 %% @spec render_final(term(), data(), test) -> term()

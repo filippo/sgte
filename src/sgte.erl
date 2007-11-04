@@ -116,6 +116,10 @@
          compile_file/1, 
          render/2, 
          render/3, 
+         render_str/2,
+         render_str/3,
+         render_bin/2,
+         render_bin/3,
          gettext_strings/1,
          gettext_init/1,
          gettext_init/2,
@@ -182,6 +186,38 @@ render(Compiled, Data, Options) ->
 %%--------------------------------------------------------------------
 render(Compiled, Data) ->
     sgte_render:render(Compiled, Data).
+
+%%--------------------------------------------------------------------
+%% @spec render_string(compiled(), data(), options()) -> string()
+%% @doc Calls render/3 and converts the result to string.
+%% @end
+%%--------------------------------------------------------------------
+render_str(Compiled, Data, Options) ->
+    sgte_render:render_str(Compiled, Data, Options).
+
+%%--------------------------------------------------------------------
+%% @spec render_string(compiled(), data()) -> string()
+%% @doc Calls render/2 and converts the result to string.
+%% @end
+%%--------------------------------------------------------------------
+render_str(Compiled, Data) ->
+    sgte_render:render_str(Compiled, Data).
+
+%%--------------------------------------------------------------------
+%% @spec render_bin(compiled(), data(), options()) -> binary()
+%% @doc Calls render/3 and converts the result to binary.
+%% @end
+%%--------------------------------------------------------------------
+render_bin(Compiled, Data, Options) ->
+    sgte_render:render_bin(Compiled, Data, Options).
+
+%%--------------------------------------------------------------------
+%% @spec render_bin(compiled(), data()) -> binary()
+%% @doc Calls render/2 and converts the result to binary.
+%% @end
+%%--------------------------------------------------------------------
+render_bin(Compiled, Data) ->
+    sgte_render:render_bin(Compiled, Data).
 
 %%--------------------------------------------------------------------
 %% @spec gettext_strings(T::template()) -> [gettext_tuple()]

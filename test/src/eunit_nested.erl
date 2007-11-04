@@ -14,14 +14,14 @@
 %%
 multi_attr_test_() ->
     {ok, C} = sgte:compile("$foo.bar.baz$"),
-    Res = sgte:render(C, [{foo, [{bar, [{baz, "foo, bar and baz"}]}]}]),
+    Res = sgte:render_str(C, [{foo, [{bar, [{baz, "foo, bar and baz"}]}]}]),
     ResultStr = "foo, bar and baz",
     ?_assert(Res =:= ResultStr).
 
 record_test_() ->
     Rec = #test_rec{col1="foo", col2="bar", col3="baz"},
     {ok, C} = sgte:compile("$test_rec.col1$, $test_rec.col2$ and $test_rec.col3$"),
-    Res = sgte:render(C, [sgte:rec_to_name_kv(Rec, record_info(fields, test_rec))]),
+    Res = sgte:render_str(C, [sgte:rec_to_name_kv(Rec, record_info(fields, test_rec))]),
     ResultStr = "foo, bar and baz",
     ?_assert(Res =:= ResultStr).
 
@@ -30,21 +30,21 @@ nested_record_test_() ->
                           record_info(fields, test_rec)),
     Rec = #test_rec{col1=Rec2},
     {ok, C} = sgte:compile("$test_rec.col1.col1$, $test_rec.col1.col2$ and $test_rec.col1.col3$"),
-    Res = sgte:render(C, [sgte:rec_to_name_kv(Rec, record_info(fields, test_rec))]),
+    Res = sgte:render_str(C, [sgte:rec_to_name_kv(Rec, record_info(fields, test_rec))]),
     ResultStr = "foo, bar and baz",
     ?_assert(Res =:= ResultStr).
     
 include_test_() ->
     {ok, C1} = sgte:compile("bar"),
     {ok, C2} = sgte:compile("foo $include tmpl.bar$ baz"),
-    Res = sgte:render(C2, [{tmpl, [{bar, C1}]}]),
+    Res = sgte:render_str(C2, [{tmpl, [{bar, C1}]}]),
     ResultStr = "foo bar baz",
     ?_assert(Res =:= ResultStr).
 
 apply_test_() ->
     F = fun(L) -> lists:nth(2, L) end,
     {ok, C} = sgte:compile("foo $apply list.second myList$ baz"),
-    Res = sgte:render(C, [{list, [{second, F}]}, 
+    Res = sgte:render_str(C, [{list, [{second, F}]}, 
                           {myList, ["1", "2", "3"]}]),
     ResultStr = "foo 2 baz",
     ?_assert(Res =:= ResultStr).
@@ -57,12 +57,12 @@ simpleif_test_() ->
     DElse3 = [{test, [{flag, ""}]}],
     DElse4 = [{test, [{flag, {}}]}],
     DElse5 = [{test, [{flag, 0}]}],
-    RThen  = sgte:render(C, DThen),
-    RElse1 = sgte:render(C, DElse1),
-    RElse2 = sgte:render(C, DElse2),
-    RElse3 = sgte:render(C, DElse3),
-    RElse4 = sgte:render(C, DElse4),
-    RElse5 = sgte:render(C, DElse5),
+    RThen  = sgte:render_str(C, DThen),
+    RElse1 = sgte:render_str(C, DElse1),
+    RElse2 = sgte:render_str(C, DElse2),
+    RElse3 = sgte:render_str(C, DElse3),
+    RElse4 = sgte:render_str(C, DElse4),
+    RElse5 = sgte:render_str(C, DElse5),
     ThenStr = "Start then branch",
     ElseStr =  "Start else branch",
     [?_assertMatch(RThen, ThenStr),
@@ -74,7 +74,7 @@ simpleif_test_() ->
 
 simpleif_no_test_test_() ->
     {ok, C} = sgte:compile(simple_if()),
-    RElse = sgte:render(C, [], [quiet]),
+    RElse = sgte:render_str(C, [], [quiet]),
     ?_assert(RElse =:= "Start else branch").
 
 if_test_() ->
@@ -84,14 +84,14 @@ if_test_() ->
 	    {nameList, NameL}],
     Data2 = [{test, [{names, false}]},
 	    {noName, fun no_name/1}],
-    Res1 = sgte:render(Compiled, Data1),
-    Res2 = sgte:render(Compiled, Data2),
+    Res1 = sgte:render_str(Compiled, Data1),
+    Res2 = sgte:render_str(Compiled, Data2),
     [?_assert(Res1 =:= "Hello! Some Mountains: Monte Bianco, Cerro Torre, Mt. Everest, Catinaccio Bye Bye."),
      ?_assert(Res2 =:= "Hello! No Name Found Bye Bye.")].    
 
 js_support_test_() ->
     {ok, CF} = sgte:compile("$('someId') and a $nested.attr$ and $('anotherId')"),
-    Res = sgte:render(CF, [{nested, [{attr, "nested attribute"}]}]),
+    Res = sgte:render_str(CF, [{nested, [{attr, "nested attribute"}]}]),
     ?_assert(Res =:= "$('someId') and a nested attribute and $('anotherId')").
 
 

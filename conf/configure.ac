@@ -1,4 +1,4 @@
-AC_INIT(sgte, 0.6, pacini@sgconsulting.it, sgte)
+AC_INIT(sgte, 0.7, pacini@sgconsulting.it, sgte)
 AC_PREREQ(2.59c)
 AC_COPYRIGHT(Copyright (C) 2006-2007 S.G. Consulting)
 

@@ -5,6 +5,8 @@ TEST_PATH = -pa ../../ebin ../ebin
 
 EBIN_FILES = ../ebin/eunit_compile.beam \
 		../ebin/eunit_render.beam \
+		../ebin/eunit_render_str.beam \
+		../ebin/eunit_render_bin.beam \
 		../ebin/eunit_render_map.beam \
 		../ebin/eunit_render_types.beam \
 		../ebin/eunit_quiet.beam \

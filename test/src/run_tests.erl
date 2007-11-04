@@ -5,6 +5,8 @@
 run_tests() ->
     run_tests([eunit_compile, 
                eunit_render, 
+               eunit_render_str,
+               eunit_render_bin,
                eunit_render_map,
                eunit_render_types,
                eunit_quiet,

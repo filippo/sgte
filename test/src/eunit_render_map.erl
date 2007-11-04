@@ -14,10 +14,10 @@ map_test_() ->
     {ok, PrintM} = sgte:compile(print_mountain()),
     {ok, PrintMList} = sgte:compile(print_mountains()),
     Data = [{nameList, mountains()}, {printMountain, PrintM}],
-    Res = sgte:render(PrintMList, Data),
+    Res = sgte:render_str(PrintMList, Data),
     Rendered = "<ul><li><b>Monte Bianco</b></li><li><b>Cerro Torre</b></li><li><b>Mt. Everest</b></li><li><b>Catinaccio</b></li></ul>",
     Data2 = [{nameList, empty()}, {printMountain, PrintM}],
-    Res2 = sgte:render(PrintMList, Data2),
+    Res2 = sgte:render_str(PrintMList, Data2),
     Rendered2 = "<ul></ul>",
     [?_assert(Res =:= Rendered), 
      ?_assert(Res2 =:= Rendered2)].
@@ -26,7 +26,7 @@ mapl_test_() ->
     {ok, RowTmpl} = sgte:compile("- $attr$\n"),
     {ok, MapLTmpl} = sgte:compile("$mapl rowTmpl nameList$"),
     Data = [{rowTmpl, RowTmpl}, {nameList, mountain_list()}],
-    Res = sgte:render(MapLTmpl, Data),
+    Res = sgte:render_str(MapLTmpl, Data),
     Rendered = "- Monte Bianco\n"
 	"- Cerro Torre\n"
 	"- Mt. Everest\n"
@@ -39,7 +39,7 @@ mapj_test_() ->
     {ok, MapJ} = sgte:compile("$mapj row values sep$"),
     Data = [{row, RowTmpl}, {sep, Separator}, 
 	    {values, [{el, "foo"}, {el, "bar"}, {el, "baz"}]}],
-    Res = sgte:render(MapJ, Data),
+    Res = sgte:render_str(MapJ, Data),
     Rendered = "- foo, \n- bar, \n- baz",
     ?_assert(Res =:= Rendered).
 
@@ -50,7 +50,7 @@ mmap_test_() ->
     Data = [{nameList, mountains()}, 
 	    {row1, R1}, 
 	    {row2, R2}],
-    Res = sgte:render(PrintMList, Data),
+    Res = sgte:render_str(PrintMList, Data),
     Rendered = "<ul>"++
 	"<li class=\"riga1\"><b>Monte Bianco</b></li>"++
 	"<li class=\"riga2\"><b>Cerro Torre</b></li>"++
@@ -62,7 +62,7 @@ mmap_test_() ->
 imap_test_() ->
     {ok, PrintMList} = sgte:compile(print_inline_mountains()),
     Data = [{nameList, mountains()}, {myClass, "listItem"}],
-    Res = sgte:render(PrintMList, Data),
+    Res = sgte:render_str(PrintMList, Data),
     Rendered = "<ul>"++
 	"<li class=\"listItem\"><b>Monte Bianco</b></li>"++
 	"<li class=\"listItem\"><b>Cerro Torre</b></li>"++
@@ -71,7 +71,7 @@ imap_test_() ->
 	"</ul>",
     {ok, PrintMList2} = sgte:compile(print_inline_mountain_place()),
     Data2 = [{nameList, mountains2()}],
-    Res2 = sgte:render(PrintMList2, Data2),
+    Res2 = sgte:render_str(PrintMList2, Data2),
     Rendered2 = "<ul>"++
 	"<li><b>Monte Bianco</b> - Alps</li>"++
 	"<li><b>Cerro Torre</b> - Patagonia</li>"++
@@ -80,7 +80,7 @@ imap_test_() ->
 	"</ul>",
     {ok, PrintMList3} = sgte:compile(print_inline_mountains2()),
     Data3 = [{nameList, mountains()}, {myClass, "listItem"},  {myClass2, "listItem2"}],
-    Res3 = sgte:render(PrintMList3, Data3),
+    Res3 = sgte:render_str(PrintMList3, Data3),
     Rendered3 = "<ul>\n"++
 	"<li class=\"listItem\"><b>Monte Bianco</b></li>\n"++
 	"<li class=\"listItem\"><b>Cerro Torre</b></li>\n"++
@@ -89,20 +89,20 @@ imap_test_() ->
 	"</ul>",
     %% test bug in js code 
     {ok, C} = sgte:compile(imap_js()),
-    RenderedJs = sgte:render(C, [{owners, 
-				   [{owner, "tobbe"}, 
-				    {owner, "magnus"}
-				   ]}]
-			     ),
+    RenderedJs = sgte:render_str(C, [{owners, 
+                                      [{owner, "tobbe"}, 
+                                       {owner, "magnus"}
+                                      ]}]
+                                ),
     ResultJs = "\"#tobbe\": function(t) {save_owner(\"tobbe\",t.id);}, "++
 	"\"#magnus\": function(t) {save_owner(\"magnus\",t.id);}, ",
     %% test comma bug
     {ok, Comma} = sgte:compile(imap_comma()),
-    RendComma = sgte:render(Comma, [{attrList, 
-                                     [{attr, "First Attribute"}, 
-                                      {attr, "and the Second"}
-                                     ]}]
-                           ),
+    RendComma = sgte:render_str(Comma, [{attrList, 
+                                         [{attr, "First Attribute"}, 
+                                          {attr, "and the Second"}
+                                         ]}]
+                               ),
     ResComma = "First Attribute, and the Second, ",
     [?_assert(Res =:= Rendered), 
      ?_assert(Res2 =:= Rendered2),

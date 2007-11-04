@@ -28,7 +28,7 @@
 -module(sgte_parse).
 
 %% API
--export([parse/1, gettext_strings/1]).
+-export([parse/1, gettext_strings/1, test/1]).
 
 -define(KEYWORD_START, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_").
 
@@ -47,61 +47,103 @@
 %% @end
 %%--------------------------------------------------------------------
 parse(Template) ->
-    parse(Template, [], 1).
+    parse(Template, [], [], 1).
 
-parse([], Parsed, _Line) ->
+parse([], Parsed, [], _Line) ->
     {ok, lists:reverse(Parsed)};
-parse("$include"++T, Parsed, Line) ->
+parse([], Parsed, Acc, _Line) ->
+    Raw = list_to_binary(lists:reverse(Acc)),
+    {ok, lists:reverse([Raw | Parsed])};
+parse("$$" ++ T, Parsed, Acc, Line) ->
+    parse(T, Parsed, "$" ++ Acc, Line);
+parse("$" ++ T, Parsed, Acc, Line) ->
+    case parse_key(T, Line) of
+        {ok, Keyword, LinesParsed, Rest} ->
+            case Acc of
+                [] ->
+                    parse(Rest, [Keyword|Parsed], [], Line+LinesParsed);
+                _ ->
+                    Raw = list_to_binary(lists:reverse(Acc)),
+                    parse(Rest, [Keyword,Raw|Parsed], [], Line+LinesParsed)
+            end;
+        false ->
+            parse(T, Parsed, "$" ++ Acc, Line);
+        {error, Reason} -> 
+            {error, {attribute, Reason, Line}}
+    end;
+parse([H|T], Parsed, Acc, Line) when H == $\\ andalso hd(T) == $$ ->
+    parse(tl(T), Parsed, [hd(T)|Acc], Line);
+parse([H|T], Parsed, Acc, Line) when [H] == "\r" andalso hd(T) == "\n" ->
+    parse(tl(T), Parsed, ["\r\n"|Acc], Line+1);
+parse([H|T], Parsed, Acc, Line) when [H] == "\r" orelse [H] == "\n" ->
+    parse(T, Parsed, [H|Acc], Line+1);
+parse([{ift, _, ParsedLines}=H|T], Parsed, Acc, Line) ->
+    case Acc of 
+        [] ->
+            parse(T, [H|Parsed], Acc, Line+ParsedLines);
+        _ ->
+            parse(T, [H|[list_to_binary(lists:reverse(Acc))|Parsed]], [], Line+ParsedLines)
+    end;
+parse([H|T], Parsed, Acc, Line) ->
+    case simple([H|T]) of
+        {ok, [], _L, T1} ->
+            parse(T1, Parsed, Acc, Line);
+        {ok, H1, _L, T1} ->
+            parse(T1, Parsed, [H1|Acc], Line)
+    end.
+
+
+parse_key("include"++T, Line) ->
     P = and_parser([fun strip_blank/1, 
 		    until(fun is_dollar/1)]),
     case P(T) of
 	{ok, [Token], LinesParsed, Rest} ->
-	    parse(Rest, [{include, Token, Line}|Parsed], Line+LinesParsed);
+	    {ok, {include, Token, Line}, LinesParsed, Rest};
 	{error, Reason} -> 
 	    {error, {include, Reason, Line}}
     end;
-parse("$apply"++T, Parsed, Line) ->
+parse_key("apply"++T, Line) ->
     P = and_parser([fun strip_blank/1, 
 		    until_space(fun is_blank/1), 
 		    until(fun is_dollar/1)]),
     case P(T) of
 	{ok, [F, V], LinesParsed, Rest} ->
-	    parse(Rest, [{apply, {F, V}, Line}|Parsed], Line+LinesParsed);
+	    {ok, {apply, {F, V}, Line}, LinesParsed, Rest};
 	{error, Reason} -> 
 	    {error, {apply, Reason, Line}}
     end;
-parse("$mapl"++T, Parsed, Line) ->
+parse_key("mapl"++T, Line) ->
     P = and_parser([fun strip_blank/1, 
 		    until_space(fun is_blank/1), 
 		    until(fun is_dollar/1)]),    
     case P(T) of
 	{ok, [Tmpl, VList], LinesParsed, Rest} ->
-	    parse(Rest, [{mapl, {Tmpl, VList}, Line}|Parsed], Line+LinesParsed);
+	    {ok, {mapl, {Tmpl, VList}, Line}, LinesParsed, Rest};
 	{error, Reason} -> 
 	    {error, {mapl, Reason, Line}}
     end;
-parse("$mapj"++T, Parsed, Line) ->
+parse_key("mapj"++T, Line) ->
     P = and_parser([fun strip_blank/1, 
 		    until_space(fun is_blank/1), 
 		    until_space(fun is_blank/1), 
 		    until(fun is_dollar/1)]),    
     case P(T) of
 	{ok, [Tmpl, VList, Join], LinesParsed,Rest} ->
-	    parse(Rest, [{mapj, {Tmpl, VList, Join}, Line}|Parsed], Line+LinesParsed);
+	    {ok, {mapj, {Tmpl, VList, Join}, Line}, LinesParsed, Rest};
 	{error, Reason} -> 
 	    {error, {mapj, Reason, Line}}
     end;
-parse("$mmap"++T, Parsed, Line) ->
+parse_key("mmap"++T, Line) ->
     P = and_parser([fun strip_blank/1, 
 		    until_greedy(fun is_blank/1), 
 		    until(fun is_dollar/1)]),    
     case P(T) of
 	{ok, [TmplL, VList], LinesParsed, Rest} ->
-	    parse(Rest, [{mmap, {TmplL, VList}, Line}|Parsed], Line+LinesParsed);
+            {ok, {mmap, {TmplL, VList}, Line}, LinesParsed, Rest};
 	{error, Reason} -> 
 	    {error, {mmap, Reason, Line}}
     end;
-parse("$map:"++T, Parsed, Line) ->
+parse_key("map:"++T, Line) ->
     Rules = [fun can_be_blank/1, 
 	     parenthesis(fun is_open_bracket/1, fun is_close_bracket/1), 
 	     until(fun is_dollar/1)],
@@ -112,46 +154,46 @@ parse("$map:"++T, Parsed, Line) ->
  		{error, {Tok, Reason, L}} ->
  		    {error, {Tok, Reason, Line+L}};
  		{ok, InlP} ->
- 		    parse(Rest, [{imap, {[InlP], VList}, Line}|Parsed], Line+LinesParsed)
+ 		    {ok, {imap, {[InlP], VList}, Line}, LinesParsed, Rest}
  	    end;
  	{error, Reason} -> 
  	    {error, {imap, Reason, Line}}
     end;
-parse("$map"++T, Parsed, Line) ->
+parse_key("map"++T, Line) ->
     P = and_parser([fun strip_blank/1, 
 		    until_space(fun is_blank/1), 
 		    until(fun is_dollar/1)]),    
     case P(T) of
 	{ok, [Tmpl, VList], LinesParsed, Rest} ->
-	    parse(Rest, [{map, {Tmpl, VList}, Line}|Parsed], Line+LinesParsed);
+	    {ok, {map, {Tmpl, VList}, Line}, LinesParsed, Rest};
 	{error, Reason} -> 
 	    {error, {map, Reason, Line}}
     end;
-parse("$join:"++T, Parsed, Line) ->
+parse_key("join:"++T, Line) ->
     Rules = [fun can_be_blank/1, 
 	     parenthesis(fun is_open_bracket/1, fun is_close_bracket/1), 
 	     until(fun is_dollar/1)],
     P = and_parser(Rules),    
     case P(T) of
  	{ok, [Separator, VList], LinesParsed, Rest} ->
-	    parse(Rest, [{join, {Separator, VList}, Line}|Parsed], Line+LinesParsed);
+	    {ok, {join, {Separator, VList}, Line}, LinesParsed, Rest};
  	{error, Reason} -> 
- 	    {error, {imap, Reason, Line}}
+ 	    {error, {join, Reason, Line}}
     end;
-parse("$txt:"++T, Parsed, Line) ->
+parse_key("txt:"++T, Line) ->
     Rules = [fun can_be_blank/1, 
 	     parenthesis(fun is_open_bracket/1, fun is_close_bracket/1), 
 	     until(fun is_dollar/1)],
     P = and_parser(Rules),
     case P(T) of
  	{ok, [Key, ""], LinesParsed, Rest} ->
-	    parse(Rest, [{gettext, Key, Line}|Parsed], Line+LinesParsed);
+	    {ok, {gettext, Key, Line}, LinesParsed, Rest};
  	{ok, [_Key, Whatever], _LinesParsed, _Rest} ->
  	    {error, {gettext, {Whatever, not_allowed_here}, Line}};
  	{error, Reason} -> 
  	    {error, {gettext, Reason, Line}}
     end;
-parse("$if "++T, Parsed, Line) ->
+parse_key("if "++T, Line) ->
     %% if uses the code from the old version. See if it can be improved
     IfTmpl = collect_ift(T),
     case IfTmpl of
@@ -161,33 +203,22 @@ parse("$if "++T, Parsed, Line) ->
 	    case parse_ift(IfToken) of
 		{error, Reason} -> {error, {ift, Reason, Line}};
 		{ift, ParsedIf} -> 
-		    parse(Rest1, [{ift, ParsedIf, Line}|Parsed], Line)
+		    {ok, {ift, ParsedIf, Line}, Line, Rest1}
 	    end
     end;
-parse([H|T], Parsed, Line) when H == $$ andalso hd(T) == $$ ->
-    parse(tl(T), [H|Parsed], Line);
-parse([H|T], Parsed, Line) when H == $$ ->
-    case lists:member(hd(T), ?KEYWORD_START) of
+parse_key([H|T], Line) ->
+    case lists:member(H, ?KEYWORD_START) of
 	true ->
 	    P =  until(fun is_dollar/1),
-	    case P(T) of
+	    case P([H|T]) of
 		{ok, Token, LinesParsed, Rest} ->
-		    parse(Rest, [{attribute, Token, Line}|Parsed], Line+LinesParsed);
+		    {ok, {attribute, Token, Line}, LinesParsed, Rest};
 		{error, Reason} -> 
 		    {error, {attribute, Reason, Line}}
 	    end;
 	false ->
-	    parse(T, [H|Parsed], Line)
-    end;
-parse([H|T], Parsed, Line) when H == $\\ andalso hd(T) == $$ ->
-    parse(tl(T), [hd(T)|Parsed], Line);
-parse([H|T], Parsed, Line) when [H] == "\r" andalso hd(T) == "\n" ->
-    parse(tl(T), ["\r\n"|Parsed], Line+1);
-parse([H|T], Parsed, Line) when [H] == "\r" orelse [H] == "\n" ->
-    parse(T, [H|Parsed], Line+1);
-parse([H|T], Parsed, Line) ->
-    {ok, H1, _L, T1} = simple([H|T]),
-    parse(T1, [H1|Parsed], Line).
+            false
+    end.
 
 
 %%--------------------------------------------------------------------
@@ -213,7 +244,7 @@ gettext_strings("$txt:"++T, Parsed, L) ->
 	     until(fun is_dollar/1)],
     P = and_parser(Rules),
     case P(T) of
- 	{ok, [Key, ''], LinesParsed, Rest} ->
+ 	{ok, [Key, ""], LinesParsed, Rest} ->
 	    gettext_strings(Rest, [{Key, L}|Parsed], L+LinesParsed);
  	{ok, [_Key, Whatever], _LinesParsed, _Rest} ->
  	    {error, {gettext, {Whatever, not_allowed_here}}};
@@ -560,3 +591,18 @@ is_open_bracket(C) ->
 %%--------------------------------------------------------------------
 is_close_bracket(C) ->
     match_char(C, "}").
+
+test(1) ->
+    parse("$apply myFun aVar$");
+test(2) ->
+    parse("$if title$
+         <h1>$title$</h1>
+     $else$
+         <h1>default title</h1>
+     $end if$");
+test(o2) ->
+    sgte_parse_old:parse("$if title$
+         <h1>$title$</h1>
+     $else$
+         <h1>default title</h1>
+     $end if$").

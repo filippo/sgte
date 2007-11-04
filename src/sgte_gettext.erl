@@ -51,7 +51,10 @@
 gettext_init(TargetDir, SrcFiles, Domain) ->
     %% Create target directory and parent directories
     %% when missing.
-    os:cmd("mkdir -p " ++ TargetDir),
+    case lists:last(TargetDir) of
+        "/" -> ok = filelib:ensure_dir(TargetDir);
+        _   -> ok = filelib:ensure_dir(TargetDir++"/")
+    end,
     %% Create the .pot file
     case file:open(TargetDir++"/"++Domain, write) of
         {ok, Fd} ->
@@ -99,11 +102,11 @@ gettext_entry({FName, {Key, LineNo}, Default}) ->
     {ok, C} = sgte:compile("~n#: $fname$:$line_no$~n"
                            "msgid \"$key$\"~n"
                            "msgstr \"$default$\"~n"),
-    Res = sgte:render(C, 
-                      [{fname, FName}, 
-                       {line_no, integer_to_list(LineNo)}, 
-                       {key, Key}, 
-                       {default, Default}]),
+    Res = sgte:render_str(C, 
+                          [{fname, FName}, 
+                           {line_no, integer_to_list(LineNo)}, 
+                           {key, Key}, 
+                           {default, Default}]),
     Res.
 
 %%--------------------------------------------------------------------
