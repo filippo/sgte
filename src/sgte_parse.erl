@@ -27,10 +27,16 @@
 %%%-------------------------------------------------------------------
 -module(sgte_parse).
 
+-ifdef(ERLHIVE).
+-import(.lists).    % erlhive uses package notation
+-import(.string).   % ditto
+-endif.
+
 %% API
 -export([parse/1, gettext_strings/1, test/1]).
 
 -define(KEYWORD_START, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_").
+
 
 %%====================================================================
 %% API
@@ -591,18 +597,3 @@ is_open_bracket(C) ->
 %%--------------------------------------------------------------------
 is_close_bracket(C) ->
     match_char(C, "}").
-
-test(1) ->
-    parse("$apply myFun aVar$");
-test(2) ->
-    parse("$if title$
-         <h1>$title$</h1>
-     $else$
-         <h1>default title</h1>
-     $end if$");
-test(o2) ->
-    sgte_parse_old:parse("$if title$
-         <h1>$title$</h1>
-     $else$
-         <h1>default title</h1>
-     $end if$").

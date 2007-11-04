@@ -27,6 +27,11 @@
 %%%-------------------------------------------------------------------
 -module(sgte_render).
 
+-ifdef(ERLHIVE).
+-import(.lists).    % erlhive uses package notation
+-import(.string).   % ditto
+-endif.
+
 -export([render/2, 
          render/3, 
          render_str/2, 

@@ -111,6 +111,10 @@
 %%%-------------------------------------------------------------------
 -module(sgte).
 
+-ifdef(ERLHIVE).
+-import(.file).         % erlhive uses package notation
+-endif.
+
 %% API
 -export([compile/1, 
          compile_file/1, 
