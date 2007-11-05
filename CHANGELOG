@@ -6,6 +6,7 @@
   Works without problems in yaws
   added render_str to return a string like render worked previously
   added render_bin: returns a list of binaries
+- changes and preprocessor macros to use sgte from erlhive
 
 0.6
 

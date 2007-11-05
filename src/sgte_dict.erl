@@ -27,6 +27,11 @@
 %%%-------------------------------------------------------------------
 -module(sgte_dict).
 
+-ifdef(ERLHIVE).
+-import(.lists).    % erlhive uses package notation
+-import(.dict).     % ditto
+-endif.
+
 -export([rfind/2, 
          find/2, 
          store/3, 

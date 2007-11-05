@@ -111,6 +111,10 @@
 %%%-------------------------------------------------------------------
 -module(sgte).
 
+-ifdef(ERLHIVE).
+-import(.file).         % erlhive uses package notation
+-endif.
+
 %% API
 -export([compile/1, 
          compile_file/1, 
@@ -126,6 +130,7 @@
          gettext_init/3,
          rec_to_name_kv/2,
          rec_to_kv/2]).
+
 
 %%yaws_tei is not in a public release yet -behaviour(yaws_tei).
 

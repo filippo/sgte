@@ -27,6 +27,11 @@
 %%%-------------------------------------------------------------------
 -module(sgte_gettext).
 
+-ifdef(ERLHIVE).
+-import(.file).    % erlhive uses package notation
+-import(.lists).   % ditto
+-endif.
+
 %% API
 -export([gettext_init/3]).
 
@@ -40,7 +45,7 @@
 %%                            ok | {error, Reason}
 %%
 %% @doc Creates the gettext template file (.pot). 
-%% TargetDir is the directory where the file will be created. 
+%% TargetDir is the path (terminated with /) where the file will be created. 
 %% If TargetDir doesn't exists it will be created. 
 %% SrcFiles is the list of files to be parsed for gettext strings. 
 %% Each gettext string found will be written to the .pot file. 
@@ -51,12 +56,9 @@
 gettext_init(TargetDir, SrcFiles, Domain) ->
     %% Create target directory and parent directories
     %% when missing.
-    case lists:last(TargetDir) of
-        "/" -> ok = filelib:ensure_dir(TargetDir);
-        _   -> ok = filelib:ensure_dir(TargetDir++"/")
-    end,
+    ok = filelib:ensure_dir(TargetDir),
     %% Create the .pot file
-    case file:open(TargetDir++"/"++Domain, write) of
+    case file:open(filename:join([TargetDir, Domain]), write) of
         {ok, Fd} ->
             %% Write .pot header
             io:format(Fd, po_header(), []),
@@ -116,7 +118,11 @@ gettext_entry({FName, {Key, LineNo}, Default}) ->
 %% @end
 %%--------------------------------------------------------------------
 po_header() ->
-    Date = os:cmd("date +%F\\ %T\\ %z"),
+    {{Y,Mo,D},{H,Mi,S}} = calendar:local_time(),
+    Date = lists:flatten(
+             io_lib:fwrite(
+               "~4.4.0w-~2.2.0w-~2.2.0w ~2.2.0w:~2.2.0w:~2.2.0w",
+               [Y,Mo,D,H,Mi,S])),
     Res = 
         "# SOME DESCRIPTIVE TITLE.~n"
         "# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER~n"
@@ -127,13 +133,13 @@ po_header() ->
         "msgid \"\"~n"
         "msgstr \"\"~n"
         "\"Project-Id-Version: PACKAGE VERSION\n\"~n"
-        "\"Report-Msgid-Bugs-To: \\n\"~n"
+        "\"Report-Msgid-Bugs-To: \"~n"
         "\"POT-Creation-Date: " 
-        ++ lists:sublist(Date, 1, length(Date)-1) ++ "\\n\"~n"
-        "\"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\\n\"~n"
-        "\"Last-Translator: FULL NAME <EMAIL@ADDRESS>\\n\"~n"
-        "\"Language-Team: LANGUAGE <LL@li.org>\\n\"~n"
-        "\"MIME-Version: 1.0\\n\"~n"
-        "\"Content-Type: text/plain; charset=CHARSET\\n\"~n"
-        "\"Content-Transfer-Encoding: 8bit\\n\"~n",
+        ++ lists:sublist(Date, 1, length(Date)-1) ++ "\"~n"
+        "\"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\"~n"
+        "\"Last-Translator: FULL NAME <EMAIL@ADDRESS>\"~n"
+        "\"Language-Team: LANGUAGE <LL@li.org>\"~n"
+        "\"MIME-Version: 1.0\"~n"
+        "\"Content-Type: text/plain; charset=CHARSET\"~n"
+        "\"Content-Transfer-Encoding: 8bit\"~n",
     Res.
