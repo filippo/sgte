@@ -33,7 +33,7 @@
 -endif.
 
 %% API
--export([parse/1, gettext_strings/1, test/1]).
+-export([parse/1, gettext_strings/1]).
 
 -define(KEYWORD_START, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_").
 
