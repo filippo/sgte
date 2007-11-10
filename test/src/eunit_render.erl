@@ -109,15 +109,15 @@ fif_test_() ->
                        <<" Bye Bye.">>]),
      ?_assert(Res2 =:= [<<"Hello! ">>, ["No Name Found"], <<" Bye Bye.">>])].
 
-%% nested_fif_test_() ->
-%%     {ok, Compiled} = sgte:compile(nested_if_string()),
-%%     NameL = mountainList(),
-%%     D1 = dict:new(),
-%%     D2 = dict:store('testNames', check_names(NameL), D1),
-%%     D3 = dict:store('noName', fun no_name/1, D2),
-%%     D4 = dict:store('nameList', NameL, D3),
-%%     Res = sgte:render(Compiled, D4),
-%%     ?_assert(Res =:= "Some Mountains: Monte Bianco, Cerro Torre, Mt. Everest, Catinaccio").
+nested_fif_test_() ->
+    {ok, Compiled} = sgte:compile(nested_if_string()),
+    NameL = mountainList(),
+    D1 = dict:new(),
+    D2 = dict:store('testNames', check_names(NameL), D1),
+    D3 = dict:store('noName', fun no_name/1, D2),
+    D4 = dict:store('nameList', NameL, D3),
+    Res = sgte:render_str(Compiled, D4),
+    ?_assert(Res =:= "Some Mountains: Monte Bianco, Cerro Torre, Mt. Everest, Catinaccio").
 
 join_test_() ->
     {ok, C} = sgte:compile("$join:{, } aList$"),
