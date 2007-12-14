@@ -1,4 +1,4 @@
-%%%-------------------------------------------------------------------
+
 %%% File    : sgte.erl
 %%% Author  : filippo pacini <pacini@sgconsulting.it>
 %%%
@@ -193,7 +193,7 @@ render(Compiled, Data) ->
     sgte_render:render(Compiled, Data).
 
 %%--------------------------------------------------------------------
-%% @spec render_string(compiled(), data(), options()) -> string()
+%% @spec render_str(compiled(), data(), options()) -> string()
 %% @doc Calls render/3 and converts the result to string.
 %% @end
 %%--------------------------------------------------------------------
@@ -201,7 +201,7 @@ render_str(Compiled, Data, Options) ->
     sgte_render:render_str(Compiled, Data, Options).
 
 %%--------------------------------------------------------------------
-%% @spec render_string(compiled(), data()) -> string()
+%% @spec render_str(compiled(), data()) -> string()
 %% @doc Calls render/2 and converts the result to string.
 %% @end
 %%--------------------------------------------------------------------

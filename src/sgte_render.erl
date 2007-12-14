@@ -40,7 +40,7 @@
          render_bin/3]).
 
 %%--------------------------------------------------------------------
-%% @spec render_string(compiled(), data(), options()) -> string()
+%% @spec render_str(compiled(), data(), options()) -> string()
 %% @doc Calls render/3 and converts the result to string.
 %% @end
 %%--------------------------------------------------------------------
@@ -48,7 +48,7 @@ render_str(Compiled, Data, Options) ->
     to_str(render(Compiled, Data, Options)).
 
 %%--------------------------------------------------------------------
-%% @spec render_string(compiled(), data()) -> string()
+%% @spec render_str(compiled(), data()) -> string()
 %% @doc Calls render/2 and converts the result to string.
 %% @end
 %%--------------------------------------------------------------------
@@ -129,7 +129,7 @@ to_str(DeepL) ->
     lists:flatten(lists:map(ToStr, lists:flatten(DeepL))).
 
 %%--------------------------------------------------------------------
-%% @spec to_binary(deep_list()) -> string()
+%% @spec to_bin(deep_list()) -> string()
 %% @doc Gets a deep list with mixed strings and binaries. Converts
 %% everything to binary and returns the flattened list.
 %% @end
@@ -459,7 +459,9 @@ gettext_lc(Options) ->
     end.
 
 %%--------------------------------------------------------------------
-%% @spec printable(Term::term()) -> string()
+%% @spec printable(Term::term(), Else::function()) -> string()
+%% @doc Tries to convert an erlang term to string
+%% @end
 %%--------------------------------------------------------------------
 printable(Term, _Else) when is_integer(Term) ->
     integer_to_list(Term);
