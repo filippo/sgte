@@ -1,4 +1,4 @@
-
+%%%-------------------------------------------------------------------
 %%% File    : sgte.erl
 %%% Author  : filippo pacini <pacini@sgconsulting.it>
 %%%
@@ -16,97 +16,6 @@
 %%% srl. Portions created by S.G. Consulting s.r.l. are Copyright (C)
 %%% 2006 S.G. Consulting srl. All Rights Reserved.
 %%%
-%%% @doc 
-%%% <p>The <em>SGTE</em> module is a library implementing a Template Engine
-%%% The template system is inspired on <a href="http://www.stringtemplate.org">String Template</a>
-%%% </p><p>
-%%% The use of the Engine is as simple as (from the command line):
-%%% <pre>
-%%% > {ok, Compiled} = sgte:compile(TmplStr),
-%%% > sgte:render(Compiled, Data).
-%%% or:
-%%% > {ok, Compiled} = sgte:compile_file(FileName),
-%%% > sgte:render(Compiled, Data).
-%%% </pre>
-%%% Data can be a Dict or a list of tuple (e.g. [{attr1, Val1}, {attr2, Val2}])
-%%% Values can be a simple value or a function/1. In this case the function is 
-%%% called with Data as an argument.
-%%% </p>
-%%% <h3>Template Features</h3>
-%%% Below some of the template features. 
-%%% <h4>Attribute reference</h4>
-%%% Attribute reference is written as: 
-%%% <pre>
-%%% $name$
-%%% </pre> Here is an example:
-%%% <pre>
-%%% > {ok, C} = sgte:compile("Hello $name$!"),
-%%% > sgte:render(C, [{name, "Filippo").
-%%% "Hello Filippo!"
-%%% </pre>
-%%% You can also use attribute references to access nested structures. Eg.:
-%%% <pre>
-%%% > {ok, C} = sgte:compile("$foo.bar.baz$"),
-%%% > sgte:render(C, [{foo, [{bar, [{baz, "a string"}]}]}]),
-%%% "a string"
-%%% </pre>
-%%% <h4>Template reference</h4>
-%%% <pre>
-%%% $include tmpl$
-%%% </pre> Includes an external template.
-%%% <h4>Application of an attribute to another</h4>
-%%% <pre>
-%%% $apply myFun aVar$
-%%% </pre> When the first attribute is callable you get the
-%%% result of myFun(aVar). Otherwhise the result is the value of
-%%% myFun.
-%%% <h4>Conditional evaluation</h4> 
-%%%   <pre>
-%%%   $if title$
-%%%       &lt;h1&gt;$title$&lt;/h1&gt;
-%%%   $else$
-%%%       &lt;h1&gt;default title&lt;/h1&gt;
-%%%   $end if$
-%%%   </pre>
-%%% <h4>Template application to a list of elements</h4>
-%%% if names is a list [{username, name1}, {username, name2}]
-%%% <pre>
-%%% $map li names$
-%%% </pre>
-%%% map li template to names. Each element in names is passed to the template with name attr.
-%%% If li is the template: 
-%%% <pre>
-%%% &lt;li&gt;&lt;b&gt;$username$&lt;/b&gt;&lt;/li&gt;</pre>
-%%% We get the result:
-%%% <pre>
-%%% &lt;li&gt;&lt;b&gt;name1&lt;/b&gt;&lt;/li&gt;
-%%% &lt;li&gt;&lt;b&gt;name2&lt;/b&gt;&lt;/li&gt;
-%%% </pre>
-%%% Another way to express the same template inline is:
-%%% <pre>
-%%% $map:{&lt;li&gt;&lt;b&gt;$username$&lt;/b&gt;&lt;/li&gt;} names$
-%%% </pre>
-%%% <h4>Join of items using a separator</h4>
-%%% <pre>
-%%% SELECT $join:{,} columns$ FROM $table$;
-%%% </pre>
-%%% <h4>Internationalization support using gettext</h4>
-%%% Gettext is a package that can be found in jungerl. It 
-%%% supports internationalization using the GNU Gettext format.
-%%% <pre>
-%%% $txt:{Hello World}$
-%%% </pre>
-%%% Here's an example supposing you already have .po files containing
-%%% translated strings:
-%%% <pre>
-%%% > {ok, C} = sgte:compile("$txt:{Hello World}$"),
-%%% > sgte:render(C, [{options, [{gettext_lc, "en"}]}]).
-%%% "Hello World"
-%%% > sgte:render(C, [{options, [{gettext_lc, "it"}]}]).
-%%% "Ciao Mondo"
-%%% </pre>
-%%%
-%%% @end
 %%% Created : 13 Sep 2006 by filippo pacini <pacini@sgconsulting.it>
 %%%-------------------------------------------------------------------
 -module(sgte).
@@ -184,7 +93,7 @@ render(Compiled, Data, Options) ->
     sgte_render:render(Compiled, Data, Options).
 
 %%--------------------------------------------------------------------
-%% @spec render(C::compiled(), Data::data()) -> string()
+%% @spec render(Compiled::compiled(), Data::data()) -> string()
 %%
 %% @doc Renders the compiled template.
 %% @end
@@ -193,8 +102,9 @@ render(Compiled, Data) ->
     sgte_render:render(Compiled, Data).
 
 %%--------------------------------------------------------------------
-%% @spec render_str(compiled(), data(), options()) -> string()
-%% @doc Calls render/3 and converts the result to string.
+%% @spec render_str(Compiled::compiled(), Data::data(), Options::options()) -> string()
+%%
+%% @doc Renders the template converting the result to string.
 %% @end
 %%--------------------------------------------------------------------
 render_str(Compiled, Data, Options) ->

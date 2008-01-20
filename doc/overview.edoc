@@ -1,0 +1,135 @@
+@title sgte - A simple Erlang Template Engine
+
+@doc 
+<p><em>sgte</em> is a library implementing a Template Engine. 
+The template system is inspired on <a href="http://www.stringtemplate.org">String Template</a>
+</p><p>
+The template source can be a string or binary or a filename. 
+The use of the engine is as simple as (from the command line):
+<pre>
+> {ok, Compiled} = sgte:compile(TmplStr),
+> sgte:render(Compiled, Data).
+
+or:
+
+> {ok, Compiled} = sgte:compile_file(FileName),
+> sgte:render(Compiled, Data).
+</pre>
+
+When compile/1 or compile_file/1 are called, the template is "compiled" 
+to an internal representation made of mixed binaries and erlang terms.
+
+Then one of the render functions (render, render_str, or render_bin) 
+can be called passing the Data to be rendered in the template.
+<ul>
+    <li>render/2 and render/3 returns a deep iolist() suitable e.g. to use in yaws</li>
+    <li>render_str/2 and render_str/3 returns a string()</li>
+    <li>render_bin/2 and render_bin/3 returns a list of binaries()</li>
+</ul>
+
+In the rest of the overview the template features will be described using render_str since
+the produced is easier to read.
+</p>
+<p>
+Data can be a Dict or a proplist (e.g. [{attr1, Val1}, {attr2, Val2}])
+Values can be a simple value or a function/1. In this case the function is 
+called with Data as an argument.
+</p>
+
+<h3>Template Features</h3>
+<h4>Attribute reference</h4>
+Attribute reference is written as: 
+<pre>
+$name$
+</pre> Here is an example:
+<pre>
+> {ok, C} = sgte:compile("Hello $name$!").
+> sgte:render_str(C, [{name, "Filippo").
+"Hello Filippo!"
+</pre>
+You can also use attribute references to access nested structures. Eg.:
+<pre>
+> {ok, C} = sgte:compile("$foo.bar.baz$").
+> sgte:render_str(C, [{foo, [{bar, [{baz, "a string"}]}]}]).
+"a string"
+</pre>
+
+<h4>Template reference</h4>
+<pre>
+$include tmpl$
+</pre> Includes an external compiled template. Eg.:
+<pre>
+> {ok, C1} = sgte:compile("foo").
+> {ok, C2} = sgte:compile("$include t1$ bar").
+> sgte:render_str(C2, [{t1, C1}]).
+"foo bar"
+</pre>
+
+<h4>Application of an attribute to another</h4>
+<pre>
+$apply myFun aVar$
+</pre> When the first attribute is callable you get the
+result of myFun(aVar). Otherwhise the result is the value of
+myFun.
+
+<h4>Conditional evaluation</h4> 
+  <pre>
+  $if title$
+      &lt;h1&gt;$title$&lt;/h1&gt;
+  $else$
+      &lt;h1&gt;default title&lt;/h1&gt;
+  $end if$
+  </pre>
+
+<h4>Template application to a list of elements</h4>
+if names is a list [{username, "foo"}, {username, "bar"}]
+<pre>
+$map li names$
+</pre>
+map li template to names. Each element in names is passed to the template with name attr.
+If li is the template: 
+<pre>
+&lt;li&gt;&lt;b&gt;$username$&lt;/b&gt;&lt;/li&gt;</pre>
+We get the result:
+<pre>
+&lt;li&gt;&lt;b&gt;foo&lt;/b&gt;&lt;/li&gt;&lt;li&gt;&lt;b&gt;bar&lt;/b&gt;&lt;/li&gt;
+</pre>
+
+In the shell we write something like:
+<pre>
+> {ok, LI} = sgte:compile("&lt;li&gt;&lt;b&gt;$username$&lt;/b&gt;&lt;/li&gt;").
+> {ok, NamesC} = sgte:compile("$map li names$").
+> sgte:render_str(NamesC, [{li, LI}, {names, [{username, "foo"}, {username, "bar"}]}]).
+&lt;li&gt;&lt;b&gt;foo&lt;/b&gt;&lt;/li&gt;&lt;li&gt;&lt;b&gt;bar&lt;/b&gt;&lt;/li&gt;
+</pre>
+
+Another way to express the same template inline all in one step is:
+<pre>
+$map:{&lt;li&gt;&lt;b&gt;$username$&lt;/b&gt;&lt;/li&gt;} names$
+</pre>
+<h4>Join of items using a separator</h4>
+<pre>
+> {ok, SEL} = sgte:compile("SELECT $join:{,} columns$ FROM $table$;").
+> sgte:render_str(SEL, [{table, "myTable"}, {columns, ["col1", "col2", "col3"]}]).
+"SELECT col1,col2,col3 FROM myTable;"
+</pre>
+
+<h4>Internationalization support using gettext</h4>
+Gettext is a package that can be found in <a href="http://jungerl.sourceforge.net/">jungerl</a>. It 
+supports internationalization using the <a href="http://www.gnu.org/software/gettext/">GNU Gettext format</a>.
+<pre>
+$txt:{Hello World}$
+</pre>
+Here's an example supposing you already have started gettext and you have the .po files containing
+translated strings:
+<pre>
+> {ok, C} = sgte:compile("$txt:{Hello World}$"),
+> sgte:render(C, [{options, [{gettext_lc, "en"}]}]).
+"Hello World"
+> sgte:render(C, [{options, [{gettext_lc, "it"}]}]).
+"Ciao Mondo"
+</pre>
+
+@end
+@author Filippo Pacini <filippo.pacini@gmail.com>
+@copyright 2006 - 2008 S.G. Consulting
