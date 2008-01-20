@@ -1,6 +1,6 @@
 AC_INIT(sgte, 0.7, pacini@sgconsulting.it, sgte)
 AC_PREREQ(2.59c)
-AC_COPYRIGHT(Copyright (C) 2006-2007 S.G. Consulting)
+AC_COPYRIGHT(Copyright (C) 2006-2008 S.G. Consulting)
 
 EBLOG_DIR=$(dirname `pwd`)
 AC_SUBST(EBLOG_DIR)
