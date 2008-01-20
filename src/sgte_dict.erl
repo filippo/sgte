@@ -16,7 +16,7 @@
 %%% 2007 S.G. Consulting srl. All Rights Reserved.
 %%%
 %%% @doc 
-%%% <p>Implements a dictionaryand a record like data structure. 
+%%% <p>Implements a dictionary and a record like data structure. 
 %%% Uses the dict module and extends it to support nested dicts.</p>
 %%%
 %%% <p>This module is the interface used to access data in the 
