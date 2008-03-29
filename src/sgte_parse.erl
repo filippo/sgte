@@ -338,7 +338,9 @@ parse_ift({Test, Then}) ->
     case parse(Then) of
 	{error, Reason} -> {error, Reason};
 	{ok, CThen} ->
-	    {ift, {{attribute, list_to_atom(string:strip(Test))}, CThen}}
+            TestTok = [list_to_atom(T) ||
+                          T <- string:tokens(string:strip(Test), ".")],
+            {ift, {{attribute, TestTok}, CThen}}
     end.
 
 %%--------------------------------------------------------------------
