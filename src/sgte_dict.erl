@@ -32,7 +32,11 @@
 -import(.dict).     % ditto
 -endif.
 
--export([rfind/2, 
+-export([rfind/2,
+         rstore/3,
+         rfoldl/2,
+         rfoldr/2,
+         rappend/3,
          find/2, 
          store/3, 
          merge/3, 
@@ -56,6 +60,35 @@ rfind([H|T], Dict) ->
             ?MODULE:rfind(T, dict:from_list(D));
         {ok, D} ->
             ?MODULE:rfind(T, D)
+    end.
+
+rstore([Key], V, D) ->
+    dict:store(Key, V, D);
+rstore([Key|T], V, D) ->
+    D1 = case find(Key, D) of
+             error ->
+                 dict:new();
+             SubDict ->
+                 SubDict
+         end,
+    dict:store(Key, rstore(T, V, D1), D).
+
+rfoldacc({K, V}, Acc) ->
+    rstore(K, V, Acc).
+
+rfoldl(KV, L) ->
+    lists:foldl(fun rfoldacc/2, L, KV).
+
+rfoldr(KV, L) ->
+    lists:foldr(fun rfoldacc/2, L, KV).
+
+rappend(K, V, L) ->
+    case rfind(K, L) of
+        {error, _} ->
+            rstore(K, [V], L);
+        {ok, A} ->
+            V1 = lists:reverse([V|lists:reverse(A)]),
+            rstore(K, V1, L)
     end.
 
 find(Key, Dict) when is_list(Dict) ->
