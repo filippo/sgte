@@ -45,33 +45,43 @@
          rec_to_kv/2]).
 
 %% recursive find
-rfind([Key], Dict) ->
-    case dict:find(Key, Dict) of
-        error ->
-            {error, Key};
-        {ok, V} ->
-            {ok, V}
-    end;
-rfind([H|T], Dict) ->
-    case dict:find(H, Dict) of
-        error ->
-            {error, H};
-        {ok, D} when is_list(D) ->
-            ?MODULE:rfind(T, dict:from_list(D));
-        {ok, D} ->
-            ?MODULE:rfind(T, D)
-    end.
+rfind(K, L) when not is_list(K) ->
+    ?MODULE:rfind([K], L);
+rfind([], L) ->
+    {ok, L};
+rfind([K|_]=F, L) when is_list(L) ->
+    rfind_proplist(proplists:get_value(K, L), F);
+rfind([K|_]=F, L) when element(1, L) =:= dict ->
+    rfind_dict(dict:find(K, L), F);
+rfind(_, _) ->
+    {error, invalid_dict}.
 
-rstore([Key], V, D) ->
+rfind_dict(error, [H|_]) ->
+    {error, H};
+rfind_dict({ok, D}, [_|T]) ->
+    ?MODULE:rfind(T, D).
+
+rfind_proplist(undefined, [H|_]) ->
+    {error, H};
+rfind_proplist(V, [_|T]) ->
+    ?MODULE:rfind(T, V).
+
+rstore(K, V, L) when not is_list(K) ->
+    ?MODULE:rstore([K], V, L);
+rstore([Key], V, D) when element(1, D) =:= dict ->
     dict:store(Key, V, D);
-rstore([Key|T], V, D) ->
-    D1 = case find(Key, D) of
-             error ->
-                 dict:new();
-             SubDict ->
-                 SubDict
-         end,
-    dict:store(Key, rstore(T, V, D1), D).
+rstore([Key|T], V, D) when element(1, D) =:= dict ->
+    D1 = find(Key, D, fun dict:new/1),
+    dict:store(Key, ?MODULE:rstore(T, V, D1), D);
+rstore([Key], V, L) when is_list(L) ->
+    L1 = proplists:delete(Key, L),
+    [{Key, V}|L1];
+rstore([Key|T], V, L) when is_list(L) ->
+    SL = proplists:get_value(Key, L, []),
+    L1 = proplists:delete(Key, L),
+    [{Key, ?MODULE:rstore(T, V, SL)}|L1];
+rstore(_, _, _) ->
+    {error, invalid_dict}.
 
 rfoldacc({K, V}, Acc) ->
     rstore(K, V, Acc).
@@ -91,10 +101,31 @@ rappend(K, V, L) ->
             rstore(K, V1, L)
     end.
 
-find(Key, Dict) when is_list(Dict) ->
-    dict:find(Key, dict:from_list(Dict));
+find(Key, L, Default) when is_list(L), is_function(Default) ->
+    find1(find(Key, L), Default);
+find(Key, L, Default) when is_list(L) ->
+    proplists:get_value(Key, L, Default);
+find(Key, Dict, Default) ->
+    find1(dict:find(Key, Dict), Default).
+
+find1(A, Default) when A == error; A == undefined, is_function(Default) ->
+    Default();
+find1(A, Default) when A == error; A == undefined ->
+    Default;
+find1({ok, V}, _) ->
+    V;
+find1(V, _) ->
+    V.
+
+find(Key, L) when is_list(L) ->
+    find1(proplists:get_value(Key, L));
 find(Key, Dict) ->
     dict:find(Key, Dict).
+
+find1(A) when A == none; A == undefined; A == error ->
+    error;
+find1(V) ->
+    {ok, V}.
 
 store(Key, Value, Dict) ->
     dict:store(Key, Value, Dict).
