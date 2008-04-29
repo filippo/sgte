@@ -35,7 +35,7 @@
 %% API
 -export([parse/1, gettext_strings/1]).
 
--define(KEYWORD_START, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_").
+-define(KEYWORD_START, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_'\"").
 
 
 %%====================================================================
@@ -46,7 +46,7 @@
 %%
 %%   @type template() = string() | binary(). Template to parse
 %%   @type compiled() = [char()|token()]
-%%          token() = tupe().
+%%          token() = tuple().
 %%
 %% @doc Parse the template string T and returns the compiled 
 %% template or an error.
@@ -321,7 +321,7 @@ parse_ift({Test, Then, Else}) ->
 	{{error, Reason1}, _} -> {error, Reason1};
 	{_, {error, Reason2}} -> {error, Reason2};
 	{{ok, CThen}, {ok, CElse}} -> 
-            TestTok = [list_to_atom(T) || 
+            TestTok = [list_to_token(T) || 
                           T <- string:tokens(string:strip(Test), ".")],
 	    {ift, 
 	     {{attribute, TestTok}, 
@@ -338,7 +338,7 @@ parse_ift({Test, Then}) ->
     case parse(Then) of
 	{error, Reason} -> {error, Reason};
 	{ok, CThen} ->
-            TestTok = [list_to_atom(T) ||
+            TestTok = [list_to_token(T) ||
                           T <- string:tokens(string:strip(Test), ".")],
             {ift, {{attribute, TestTok}, CThen}}
     end.
@@ -449,7 +449,7 @@ until(P, [H|T], Line, Parsed) ->
     case P(H) of
 	true ->
             Parsed1 = lists:reverse(Parsed),
-            TokL = [list_to_atom(X) || X <- string:tokens(Parsed1, ".")],
+            TokL = [list_to_token(X) || X <- string:tokens(Parsed1, ".")],
 	    {ok, TokL, Line, T};
 	_ ->
 	    until(P, T, Line, [H|Parsed])
@@ -476,7 +476,7 @@ until_space(P, [H|T], Line, Parsed) ->
     case P(H) of
 	true ->
             Parsed1 = lists:reverse(Parsed),
-            TokL = [list_to_atom(X) || X <- string:tokens(Parsed1, ".")],
+            TokL = [list_to_token(X) || X <- string:tokens(Parsed1, ".")],
 	    {ok, TokL, Line, T};
 	_ ->
 	    until_space(P, T, Line, [H|Parsed])
@@ -506,7 +506,7 @@ until_greedy(P, [H|T], StrSoFar, Line, ResList) when [H]=="\n" orelse [H]== "\r"
 until_greedy(P, [H|T], StrSoFar, Line, ResList) ->
     case P(H) of
 	true ->
-	    H1 = list_to_atom(string:strip(lists:reverse(StrSoFar))),
+	    H1 = list_to_token(string:strip(lists:reverse(StrSoFar))),
 	    until_greedy(P, T, "", Line, [H1|ResList]);
 	false ->
 	    until_greedy(P, T, [H|StrSoFar], Line, ResList)
@@ -599,3 +599,23 @@ is_open_bracket(C) ->
 %%--------------------------------------------------------------------
 is_close_bracket(C) ->
     match_char(C, "}").
+
+%%--------------------------------------------------------------------
+%% @spec list_to_token(string()) -> atom() | string()
+%%
+%% @doc Convert a list into a token to search the context dictionary.
+%% @end
+%%--------------------------------------------------------------------
+list_to_token([]) ->
+    {error, "Invalid token."};
+list_to_token(L) when is_list(L) ->
+    list_to_token1(L, lists:nth(1, L), lists:last(L));
+list_to_token(_) ->
+    {error, "Invalid token."}.
+
+list_to_token1(L, $', $') ->
+    list_to_atom(string:substr(L, 2, length(L) - 2));
+list_to_token1(L, $", $") ->
+    string:substr(L, 2, length(L) - 2);
+list_to_token1(L, _, _) ->
+    list_to_atom(L).
