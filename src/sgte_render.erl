@@ -122,7 +122,7 @@ render1(Compiled, Data, Attr) ->
 %%--------------------------------------------------------------------
 to_str(DeepL) ->
     ToStr = fun(El) when is_binary(El) ->
-                    binary_to_list(El);
+                    unicode:characters_to_list(El);
                (El) ->
                     El
              end,
@@ -136,7 +136,7 @@ to_str(DeepL) ->
 %%--------------------------------------------------------------------
 to_bin(DeepL) ->
     ToBin = fun(El) when is_list(El) ->
-                    list_to_binary(El);
+                    unicode:characters_to_binary(El);
                (El) ->
                     El
             end,
