@@ -287,7 +287,7 @@ render_element({gettext, Key, Line}, Data) ->
 	    on_error(fun () -> Key end, Data, X, Line);
 	LC ->
 	    case catch gettext:key2str(Key, LC) of
-		Translation when list(Translation) -> Translation;
+		Translation when is_list(Translation) -> Translation;
 		_ -> Key
 	    end 
     end;
