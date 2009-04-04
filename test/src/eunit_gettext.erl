@@ -1,6 +1,15 @@
 -module(eunit_gettext).
 
+-export([gettext_dir/0]).
+
 -include_lib("eunit/include/eunit.hrl").
+
+%% The gettext_server module needs to know where it should store the language data.
+%% There are two alternatives:
+%% 	- setting the environment variable GETTEXT_DIR, or...
+%% 	- implement this callback and call gettext_server/1 or gettext_server/2 giving ?MODULE in the first parameter
+gettext_dir() ->
+	"../priv/gettext_server_dir/".
 
 %%--------------------
 %%
