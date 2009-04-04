@@ -11,13 +11,17 @@
 %% Setup Tests
 setup() ->
     try
-	gettext_server:start(),
+	{ok, _} = gettext_server:start(?MODULE),
 	{_, SeBin} = file:read_file("../priv/gettext_test/swedish.po"),
 	{_, ItBin} = file:read_file("../priv/gettext_test/italian.po"),
 	ok = gettext:store_pofile("se", SeBin),
 	ok = gettext:store_pofile("it", ItBin)
     catch
-	_Err:_Reason ->
+	_Err:_Reason = Error ->
+		% We need to ensure that the gettext_server is taken down to prevent misleading results
+		exit(whereis(gettext_server), kill),
+		ErrorStr = lists:flatten(["The test suite setup could not be completed due to: ", io_lib:write(Error)]),
+		erlang:display(ErrorStr),
 	    error
     end.
 
@@ -28,37 +32,41 @@ compile_test_() ->
 
 %% Test Render
 do_test_() ->
-    {setup, fun setup/0, [fun simple_it/0,
-                          fun simple_se/0,
-                          fun simple_en/0,
-                          fun simple_undef/0,
-                          fun no_lc/0]}.
+    {setup,
+		fun setup/0,
+		[
+			fun simple_it/0,
+            fun simple_se/0,
+            fun simple_en/0,
+            fun simple_undef/0,
+            fun no_lc/0
+		]}.
 
 simple_it() ->
     {ok, C} = sgte:compile(simple()),
-    Res = sgte:render_str(C, [], [{gettext_lc, "it"}]),
-    ?_assert("Ciao Mondo" =:= Res).
+	Res = sgte:render_str(C, [], [{gettext_lc, "it"}]),
+	?assert("Ciao Mondo" =:= Res).
 
 simple_se() ->
     {ok, C} = sgte:compile(simple()),
     Res = sgte:render_str(C, [], [{gettext_lc, "se"}]),
-    ?_assert("Hej V\344rld" =:= Res).
+    ?assert("Hej V\344rld" =:= Res).
 
 simple_en() ->
     {ok, C} = sgte:compile(simple()),
     Res = sgte:render_str(C, [], [{gettext_lc, "en"}]),
-    ?_assert("Hello World" =:= Res).
+    ?assert("Hello World" =:= Res).
 
 simple_undef() ->
     {ok, C} = sgte:compile(simple()),
     Res = sgte:render_str(C, [{gettext_lc, "aa"}], [quiet]),
-    ?_assert("Hello World" =:= Res).
+    ?assert("Hello World" =:= Res).
 
 %% No language code passed
 no_lc() ->
     {ok, C} = sgte:compile(simple()),
     Res = sgte:render_str(C, [], [quiet]),
-    ?_assert("Hello World" =:= Res).
+    ?assert("Hello World" =:= Res).
 
 %%--------------------
 %%
