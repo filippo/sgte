@@ -19,17 +19,17 @@ string_test_() ->
                  "foo, bar, baz",
                  <<" followed by ">>, 
                  "my test data with unicode characters: àèìòù", 
-                 list_to_binary(" and unicode characters  àèìòù")],
+                 unicode:characters_to_binary(" and unicode characters  àèìòù")],
     %% error test
     Str2 = "This is a test:\n" ++
 	"$testFun()$ followed by $testData$ and unicode chars àèìòù",
     {ok, Compiled2} = sgte:compile(Str2),
-    Res2 = sgte:render_str(Compiled2, []),
-    ResultStr2 = "This is a test:\n"++
-        "[SGTE Warning: template: attribute - key 'testFun()' not found on line 2]"++
-        " followed by "++
-        "[SGTE Warning: template: attribute - key testData not found on line 2]"++
-        " and unicode chars àèìòù",
+    Res2 = sgte:render_bin(Compiled2, []),
+    ResultStr2 = [<<"This is a test:\n">>,
+        <<"[SGTE Warning: template: attribute - key 'testFun()' not found on line 2]">>,
+        <<" followed by ">>,
+        <<"[SGTE Warning: template: attribute - key testData not found on line 2]">>,
+        unicode:characters_to_binary(" and unicode chars àèìòù")],
     [?_assert(Res =:= ResultStr),
      ?_assert(Res2 =:= ResultStr2)].
 

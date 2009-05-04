@@ -18,8 +18,8 @@ string_test_() ->
     ResultStr = [<<"This is a test:\n">>,
                  <<"foo, bar, baz">>,
                  <<" followed by ">>, 
-                 list_to_binary("my test data with unicode characters: àèìòù"), 
-                 list_to_binary(" and unicode characters  àèìòù")],
+                 unicode:characters_to_binary("my test data with unicode characters: àèìòù"), 
+                 unicode:characters_to_binary(" and unicode characters  àèìòù")],
     %% error test
     Str2 = "This is a test:\n" ++
 	"$testFun()$ followed by $testData$ and unicode chars àèìòù",
@@ -29,7 +29,7 @@ string_test_() ->
                   <<"[SGTE Warning: template: attribute - key 'testFun()' not found on line 2]">>,
                   <<" followed by ">>,
                   <<"[SGTE Warning: template: attribute - key testData not found on line 2]">>,
-                  <<" and unicode chars àèìòù">>],
+                  unicode:characters_to_binary(" and unicode chars àèìòù")],
     [?_assert(Res =:= ResultStr),
      ?_assert(Res2 =:= ResultStr2)].
 

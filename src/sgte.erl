@@ -58,7 +58,7 @@
 %% @end
 %%--------------------------------------------------------------------
 compile(T) when is_binary(T) ->
-    sgte_parse:parse(binary_to_list(T));
+    sgte_parse:parse(unicode:characters_to_list(T));
 compile(T) when is_list(T) ->
     sgte_parse:parse(T).
 
@@ -146,7 +146,7 @@ render_bin(Compiled, Data) ->
 %% @end
 %%--------------------------------------------------------------------
 gettext_strings(Template) when is_binary(Template) ->
-    sgte_parse:gettext_strings(binary_to_list(Template));
+    sgte_parse:gettext_strings(unicode:characters_to_list(Template));
 gettext_strings(FileName) ->
     case file:read_file(FileName) of
 	{ok, Bin} ->

@@ -52,13 +52,15 @@
 %% template or an error.
 %% @end
 %%--------------------------------------------------------------------
-parse(Template) ->
-    parse(Template, [], [], 1).
+parse(Template) when is_list(Template) ->
+	parse(Template, [], [], 1);
+parse(_Template) ->
+	throw(parse_undefined).
 
 parse([], Parsed, [], _Line) ->
     {ok, lists:reverse(Parsed)};
 parse([], Parsed, Acc, _Line) ->
-    Raw = list_to_binary(lists:reverse(Acc)),
+    Raw = unicode:characters_to_binary(lists:reverse(Acc)),
     {ok, lists:reverse([Raw | Parsed])};
 parse("$$" ++ T, Parsed, Acc, Line) ->
     parse(T, Parsed, "$" ++ Acc, Line);
@@ -69,7 +71,7 @@ parse("$" ++ T, Parsed, Acc, Line) ->
                 [] ->
                     parse(Rest, [Keyword|Parsed], [], Line+LinesParsed);
                 _ ->
-                    Raw = list_to_binary(lists:reverse(Acc)),
+                    Raw = unicode:characters_to_binary(lists:reverse(Acc)),
                     parse(Rest, [Keyword,Raw|Parsed], [], Line+LinesParsed)
             end;
         false ->
@@ -88,7 +90,7 @@ parse([{ift, _, ParsedLines}=H|T], Parsed, Acc, Line) ->
         [] ->
             parse(T, [H|Parsed], Acc, Line+ParsedLines);
         _ ->
-            parse(T, [H|[list_to_binary(lists:reverse(Acc))|Parsed]], [], Line+ParsedLines)
+            parse(T, [H|[unicode:characters_to_binary(lists:reverse(Acc))|Parsed]], [], Line+ParsedLines)
     end;
 parse([H|T], Parsed, Acc, Line) ->
     case simple([H|T]) of

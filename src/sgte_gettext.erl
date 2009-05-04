@@ -82,7 +82,7 @@ gettext_init(TargetDir, SrcFiles, Domain) ->
 write_file(Fd, FName) ->
     case file:read_file(FName) of
         {ok, Bin} ->
-            Keys = sgte_parse:gettext_strings(binary_to_list(Bin)),
+            Keys = sgte_parse:gettext_strings(unicode:characters_to_list(Bin)),
             Entries = [gettext_entry(
                          {FName, {Key, LineNo}, Key})
                        || {Key, LineNo} <- Keys],

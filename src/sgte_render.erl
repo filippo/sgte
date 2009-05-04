@@ -470,6 +470,6 @@ printable(Term, _Else) when is_float(Term) ->
 printable(Term, _Else) when is_atom(Term) ->
     atom_to_list(Term);
 printable(Term, _Else) when is_binary(Term) ->
-    binary_to_list(Term);
+    unicode:characters_to_list(Term);
 printable(Term, Else) ->
     Else(Term).
