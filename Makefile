@@ -47,7 +47,7 @@ clean:
 	rm -rfv rm ebin/*.beam test/src/*.beam test/ebin/*.beam conf/autom4te.cache conf/config.log conf/config.status conf/configure conf/include.mk
 
 package: clean
-	@mkdir sgte-$(VERSION)/ && cp -rf _build.cfg CHANGELOG conf/ doc/ Makefile sgte.pub src/ test/ sgte-$(VERSION)
+	@mkdir sgte-$(VERSION)/ && cp -rf _build.cfg CHANGELOG conf doc Makefile sgte.pub src test sgte-$(VERSION)
 	@COPYFILE_DISABLE=true tar zcf sgte-$(VERSION).tgz sgte-$(VERSION)
 	@rm -rf sgte-$(VERSION)/
 
