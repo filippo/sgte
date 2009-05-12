@@ -44,7 +44,7 @@ tags: src/*.erl
 	cd src/ && $(TAG_CMD) $(TAG_FLAGS) $(TAG_FILES)
 
 clean:
-	rm src/*.beam; rm ebin/*.beam; rm test/src/*.beam; rm test/ebin/*.beam
+	rm -rfv rm ebin/*.beam test/src/*.beam test/ebin/*.beam conf/autom4te.cache conf/config.log conf/config.status conf/configure conf/include.mk
 
 package: clean
 	@mkdir sgte-$(VERSION)/ && cp -rf _build.cfg CHANGELOG conf/ doc/ Makefile sgte.pub src/ test/ sgte-$(VERSION)
