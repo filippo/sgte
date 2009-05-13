@@ -33,7 +33,7 @@
 -endif.
 
 %% API
--export([parse/1, gettext_strings/1]).
+-export([parse/2, gettext_strings/1]).
 
 -define(KEYWORD_START, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_'\"").
 
@@ -42,66 +42,67 @@
 %% API
 %%====================================================================
 %%--------------------------------------------------------------------
-%% @spec parse(T::template()) -> {ok, C::compiled()} | {error,Reason}
+%% @spec parse(T::template(), InEncoding::encoding()) -> {ok, C::compiled()} | {error,Reason}
 %%
 %%   @type template() = string() | binary(). Template to parse
 %%   @type compiled() = [char()|token()]
 %%          token() = tuple().
+%%   @type encoding()  = latin1 | utf8 | {utf16,little} | {utf16,big} | {utf32,little} | {utf32,big}
 %%
 %% @doc Parse the template string T and returns the compiled 
 %% template or an error.
 %% @end
 %%--------------------------------------------------------------------
-parse(Template) when is_list(Template) ->
-	parse(Template, [], [], 1);
-parse(_Template) ->
+parse(Template, InEncoding) when is_list(Template) ->
+	parse(Template, InEncoding, [], [], 1);
+parse(_Template, _InEncoding) ->
 	throw(parse_undefined).
 
-parse([], Parsed, [], _Line) ->
+parse([], _InEncoding, Parsed, [], _Line) ->
     {ok, lists:reverse(Parsed)};
-parse([], Parsed, Acc, _Line) ->
-    Raw = unicode:characters_to_binary(lists:reverse(Acc)),
+parse([], InEncoding, Parsed, Acc, _Line) ->
+    Raw = unicode:characters_to_binary(lists:reverse(Acc), InEncoding),
     {ok, lists:reverse([Raw | Parsed])};
-parse("$$" ++ T, Parsed, Acc, Line) ->
-    parse(T, Parsed, "$" ++ Acc, Line);
-parse("$" ++ T, Parsed, Acc, Line) ->
-    case parse_key(T, Line) of
+parse("$$" ++ T, InEncoding, Parsed, Acc, Line) ->
+    parse(T, InEncoding, Parsed, "$" ++ Acc, Line);
+parse("$" ++ T, InEncoding, Parsed, Acc, Line) ->
+    case parse_key(T, InEncoding, Line) of
         {ok, Keyword, LinesParsed, Rest} ->
             case Acc of
                 [] ->
-                    parse(Rest, [Keyword|Parsed], [], Line+LinesParsed);
+                    parse(Rest, InEncoding, [Keyword|Parsed], [], Line+LinesParsed);
                 _ ->
-                    Raw = unicode:characters_to_binary(lists:reverse(Acc)),
-                    parse(Rest, [Keyword,Raw|Parsed], [], Line+LinesParsed)
+                    Raw = unicode:characters_to_binary(lists:reverse(Acc), InEncoding),
+                    parse(Rest, InEncoding, [Keyword,Raw|Parsed], [], Line+LinesParsed)
             end;
         false ->
-            parse(T, Parsed, "$" ++ Acc, Line);
+            parse(T, InEncoding, Parsed, "$" ++ Acc, Line);
         {error, Reason} -> 
             {error, {attribute, Reason, Line}}
     end;
-parse([H|T], Parsed, Acc, Line) when H == $\\ andalso hd(T) == $$ ->
-    parse(tl(T), Parsed, [hd(T)|Acc], Line);
-parse([H|T], Parsed, Acc, Line) when [H] == "\r" andalso hd(T) == "\n" ->
-    parse(tl(T), Parsed, ["\r\n"|Acc], Line+1);
-parse([H|T], Parsed, Acc, Line) when [H] == "\r" orelse [H] == "\n" ->
-    parse(T, Parsed, [H|Acc], Line+1);
-parse([{ift, _, ParsedLines}=H|T], Parsed, Acc, Line) ->
+parse([H|T], InEncoding, Parsed, Acc, Line) when H == $\\ andalso hd(T) == $$ ->
+    parse(tl(T), InEncoding, Parsed, [hd(T)|Acc], Line);
+parse([H|T], InEncoding, Parsed, Acc, Line) when [H] == "\r" andalso hd(T) == "\n" ->
+    parse(tl(T), InEncoding, Parsed, ["\r\n"|Acc], Line+1);
+parse([H|T], InEncoding, Parsed, Acc, Line) when [H] == "\r" orelse [H] == "\n" ->
+    parse(T, InEncoding, Parsed, [H|Acc], Line+1);
+parse([{ift, _, ParsedLines}=H|T], InEncoding, Parsed, Acc, Line) ->
     case Acc of 
         [] ->
-            parse(T, [H|Parsed], Acc, Line+ParsedLines);
+            parse(T, InEncoding, [H|Parsed], Acc, Line+ParsedLines);
         _ ->
-            parse(T, [H|[unicode:characters_to_binary(lists:reverse(Acc))|Parsed]], [], Line+ParsedLines)
+            parse(T, InEncoding, [H|[unicode:characters_to_binary(lists:reverse(Acc), InEncoding)|Parsed]], [], Line+ParsedLines)
     end;
-parse([H|T], Parsed, Acc, Line) ->
+parse([H|T], InEncoding, Parsed, Acc, Line) ->
     case simple([H|T]) of
         {ok, [], _L, T1} ->
-            parse(T1, Parsed, Acc, Line);
+            parse(T1, InEncoding, Parsed, Acc, Line);
         {ok, H1, _L, T1} ->
-            parse(T1, Parsed, [H1|Acc], Line)
+            parse(T1, InEncoding, Parsed, [H1|Acc], Line)
     end.
 
 
-parse_key("include"++T, Line) ->
+parse_key("include"++T, _InEncoding, Line) ->
     P = and_parser([fun strip_blank/1, 
 		    until(fun is_dollar/1)]),
     case P(T) of
@@ -110,7 +111,7 @@ parse_key("include"++T, Line) ->
 	{error, Reason} -> 
 	    {error, {include, Reason, Line}}
     end;
-parse_key("apply"++T, Line) ->
+parse_key("apply"++T, _InEncoding, Line) ->
     P = and_parser([fun strip_blank/1, 
 		    until_space(fun is_blank/1), 
 		    until(fun is_dollar/1)]),
@@ -120,7 +121,7 @@ parse_key("apply"++T, Line) ->
 	{error, Reason} -> 
 	    {error, {apply, Reason, Line}}
     end;
-parse_key("mapl"++T, Line) ->
+parse_key("mapl"++T, _InEncoding, Line) ->
     P = and_parser([fun strip_blank/1, 
 		    until_space(fun is_blank/1), 
 		    until(fun is_dollar/1)]),    
@@ -130,7 +131,7 @@ parse_key("mapl"++T, Line) ->
 	{error, Reason} -> 
 	    {error, {mapl, Reason, Line}}
     end;
-parse_key("mapj"++T, Line) ->
+parse_key("mapj"++T, _InEncoding, Line) ->
     P = and_parser([fun strip_blank/1, 
 		    until_space(fun is_blank/1), 
 		    until_space(fun is_blank/1), 
@@ -141,7 +142,7 @@ parse_key("mapj"++T, Line) ->
 	{error, Reason} -> 
 	    {error, {mapj, Reason, Line}}
     end;
-parse_key("mmap"++T, Line) ->
+parse_key("mmap"++T, _InEncoding, Line) ->
     P = and_parser([fun strip_blank/1, 
 		    until_greedy(fun is_blank/1), 
 		    until(fun is_dollar/1)]),    
@@ -151,14 +152,14 @@ parse_key("mmap"++T, Line) ->
 	{error, Reason} -> 
 	    {error, {mmap, Reason, Line}}
     end;
-parse_key("map:"++T, Line) ->
+parse_key("map:"++T, InEncoding, Line) ->
     Rules = [fun can_be_blank/1, 
 	     parenthesis(fun is_open_bracket/1, fun is_close_bracket/1), 
 	     until(fun is_dollar/1)],
     P = and_parser(Rules),    
     case P(T) of
  	{ok, [Inline, VList], LinesParsed, Rest} ->
- 	    case parse(Inline) of
+ 	    case parse(Inline, InEncoding) of
  		{error, {Tok, Reason, L}} ->
  		    {error, {Tok, Reason, Line+L}};
  		{ok, InlP} ->
@@ -167,7 +168,7 @@ parse_key("map:"++T, Line) ->
  	{error, Reason} -> 
  	    {error, {imap, Reason, Line}}
     end;
-parse_key("map"++T, Line) ->
+parse_key("map"++T, _InEncoding, Line) ->
     P = and_parser([fun strip_blank/1, 
 		    until_space(fun is_blank/1), 
 		    until(fun is_dollar/1)]),    
@@ -177,7 +178,7 @@ parse_key("map"++T, Line) ->
 	{error, Reason} -> 
 	    {error, {map, Reason, Line}}
     end;
-parse_key("join:"++T, Line) ->
+parse_key("join:"++T, _InEncoding, Line) ->
     Rules = [fun can_be_blank/1, 
 	     parenthesis(fun is_open_bracket/1, fun is_close_bracket/1), 
 	     until(fun is_dollar/1)],
@@ -188,7 +189,7 @@ parse_key("join:"++T, Line) ->
  	{error, Reason} -> 
  	    {error, {join, Reason, Line}}
     end;
-parse_key("txt:"++T, Line) ->
+parse_key("txt:"++T, _InEncoding, Line) ->
     Rules = [fun can_be_blank/1, 
 	     parenthesis(fun is_open_bracket/1, fun is_close_bracket/1), 
 	     until(fun is_dollar/1)],
@@ -201,20 +202,20 @@ parse_key("txt:"++T, Line) ->
  	{error, Reason} -> 
  	    {error, {gettext, Reason, Line}}
     end;
-parse_key("if "++T, Line) ->
+parse_key("if "++T, InEncoding, Line) ->
     %% if uses the code from the old version. See if it can be improved
-    IfTmpl = collect_ift(T),
+    IfTmpl = collect_ift(T, InEncoding),
     case IfTmpl of
 	{error, Reason} ->
 	    {error, {ift, Reason, Line}};
 	{ift, IfToken, _LinesParsed, Rest1} ->
-	    case parse_ift(IfToken) of
+	    case parse_ift(IfToken, InEncoding) of
 		{error, Reason} -> {error, {ift, Reason, Line}};
 		{ift, ParsedIf} -> 
 		    {ok, {ift, ParsedIf, Line}, Line, Rest1}
 	    end
     end;
-parse_key([H|T], Line) ->
+parse_key([H|T], _InEncoding, Line) ->
     case lists:member(H, ?KEYWORD_START) of
 	true ->
 	    P =  until(fun is_dollar/1),
@@ -271,46 +272,46 @@ gettext_strings([_H|T], Parsed, L) ->
 %% Internal functions
 %%====================================================================     
 %%--------------------------------------------------------------------
-%% @spec collect_ift(T::template()) -> if_token()
+%% @spec collect_ift(T::template(), InEncoding::encoding()) -> if_token()
 %%
 %% @doc collect if token untill $end if$ is found
 %% @end
 %%--------------------------------------------------------------------
-collect_ift(Tmpl) ->
-    collect_ift(Tmpl, [], {}, 0).
+collect_ift(Tmpl, InEncoding) ->
+    collect_ift(Tmpl, InEncoding, [], {}, 0).
 
-collect_ift([], _Token, _T, _Line) ->
+collect_ift([], _InEncoding, _Token, _T, _Line) ->
     {error, end_not_found};
-collect_ift("\\$"++Rest, Token, T, Line) -> %% Escape sequence for \, $, {, }
-    collect_ift(Rest, ["$"|Token], T, Line);
-collect_ift("\\\\"++Rest, Token, T, Line) -> %% Escape sequence for \, $, {, }
-    collect_ift(Rest, ["\\"|Token], T, Line);
-collect_ift("$end if$"++Rest, Token, {Test, Then}, Line) ->
+collect_ift("\\$"++Rest, InEncoding, Token, T, Line) -> %% Escape sequence for \, $, {, }
+    collect_ift(Rest, InEncoding, ["$"|Token], T, Line);
+collect_ift("\\\\"++Rest, InEncoding, Token, T, Line) -> %% Escape sequence for \, $, {, }
+    collect_ift(Rest, InEncoding, ["\\"|Token], T, Line);
+collect_ift("$end if$"++Rest, _InEncoding, Token, {Test, Then}, Line) ->
     {ift, {Test, Then, lists:reverse(Token)}, Line, Rest};
-collect_ift("$end if$"++Rest, Token, {Test}, Line) ->
+collect_ift("$end if$"++Rest, _InEncoding, Token, {Test}, Line) ->
     {ift, {Test, lists:reverse(Token)}, Line, Rest};
-collect_ift("$else$"++Rest, Token, {Test}, Line) ->
-    collect_ift(Rest, [], {Test, lists:reverse(Token)}, Line);
-collect_ift("$if "++Rest, Token, {Test}, Line) ->  %% Nested if
-    case collect_ift(Rest, [], {}, Line) of
+collect_ift("$else$"++Rest, InEncoding, Token, {Test}, Line) ->
+    collect_ift(Rest, InEncoding, [], {Test, lists:reverse(Token)}, Line);
+collect_ift("$if "++Rest, InEncoding, Token, {Test}, Line) ->  %% Nested if
+    case collect_ift(Rest, InEncoding, [], {}, Line) of
 	{ift, InnerIf, LinesParsed, Rest1} ->
-	    case parse_ift(InnerIf) of
+	    case parse_ift(InnerIf, InEncoding) of
 		{error, Reason} -> 
 		    {error, Reason};
 		{ift, ParsedIf} -> 
-		    collect_ift(Rest1,[{ift, ParsedIf, Line}, lists:reverse(Token)], {Test}, Line+LinesParsed)
+		    collect_ift(Rest1,InEncoding,[{ift, ParsedIf, Line}, lists:reverse(Token)], {Test}, Line+LinesParsed)
 	    end;
 	{error, E} -> 
 	    {error, E}
     end;
-collect_ift([H|Rest], Token, {}, Line) when [H] == "$" ->
-    collect_ift(Rest, [], {lists:reverse(Token)}, Line);
-collect_ift([H|Rest], Token, T, Line) when [H] == "\r" andalso hd(Rest) == "\n" ->
-    collect_ift(tl(Rest), ["\r\n"|Token], T, Line+1);
-collect_ift([H|Rest], Token, T, Line) when [H] == "\r" orelse [H] == "\n" ->
-    collect_ift(Rest, [H|Token], T, Line+1);
-collect_ift([H|Rest], Token, T, Line) ->
-    collect_ift(Rest, [H|Token], T, Line).
+collect_ift([H|Rest], InEncoding, Token, {}, Line) when [H] == "$" ->
+    collect_ift(Rest, InEncoding, [], {lists:reverse(Token)}, Line);
+collect_ift([H|Rest], InEncoding, Token, T, Line) when [H] == "\r" andalso hd(Rest) == "\n" ->
+    collect_ift(tl(Rest), InEncoding, ["\r\n"|Token], T, Line+1);
+collect_ift([H|Rest], InEncoding, Token, T, Line) when [H] == "\r" orelse [H] == "\n" ->
+    collect_ift(Rest, InEncoding, [H|Token], T, Line+1);
+collect_ift([H|Rest], InEncoding, Token, T, Line) ->
+    collect_ift(Rest, InEncoding, [H|Token], T, Line).
 
 %%--------------------------------------------------------------------
 %% @spec parse_ift({Test, Then, Else}) -> if_token()
@@ -318,8 +319,8 @@ collect_ift([H|Rest], Token, T, Line) ->
 %% @doc if token parser
 %% @end
 %%--------------------------------------------------------------------
-parse_ift({Test, Then, Else}) ->
-    case {parse(Then), parse(Else)} of
+parse_ift({Test, Then, Else}, InEncoding) ->
+    case {parse(Then, InEncoding), parse(Else, InEncoding)} of
 	{{error, Reason1}, _} -> {error, Reason1};
 	{_, {error, Reason2}} -> {error, Reason2};
 	{{ok, CThen}, {ok, CElse}} -> 
@@ -336,8 +337,8 @@ parse_ift({Test, Then, Else}) ->
 %% @doc if token parser
 %% @end
 %%--------------------------------------------------------------------
-parse_ift({Test, Then}) ->
-    case parse(Then) of
+parse_ift({Test, Then}, InEncoding) ->
+    case parse(Then, InEncoding) of
 	{error, Reason} -> {error, Reason};
 	{ok, CThen} ->
             TestTok = [list_to_token(T) ||

@@ -26,7 +26,9 @@
 
 %% API
 -export([compile/1, 
+         compile/2,
          compile_file/1, 
+         compile_file/2, 
          render/2, 
          render/3, 
          render_str/2,
@@ -34,12 +36,14 @@
          render_bin/2,
          render_bin/3,
          gettext_strings/1,
+         gettext_strings/2,
          gettext_init/1,
          gettext_init/2,
          gettext_init/3,
          rec_to_name_kv/2,
          rec_to_kv/2]).
 
+-define(DEFAULT_ENC, utf8).  %%default encoding
 
 %%yaws_tei is not in a public release yet -behaviour(yaws_tei).
 
@@ -58,9 +62,25 @@
 %% @end
 %%--------------------------------------------------------------------
 compile(T) when is_binary(T) ->
-    sgte_parse:parse(unicode:characters_to_list(T));
+    sgte_parse:parse(unicode:characters_to_list(T), ?DEFAULT_ENC);
 compile(T) when is_list(T) ->
-    sgte_parse:parse(T).
+    sgte_parse:parse(T, ?DEFAULT_ENC).
+
+%%--------------------------------------------------------------------
+%% @spec compile(T::template(), Options::options()) -> {ok, C::compiled()} | {error,Reason}
+%%
+%% where options() = [option()],
+%%       option()  = {encoding, encoding()},
+%%       encoding()  = latin1 | utf8 | {utf16,little} | {utf16,big} | {utf32,little} | {utf32,big}
+%%
+%% @doc Compiles the template string T and returns the compiled 
+%% template or an error.
+%% @end
+%%--------------------------------------------------------------------
+compile(T, [{encoding, InEncoding}]) when is_binary(T) ->
+    sgte_parse:parse(unicode:characters_to_list(T, InEncoding), InEncoding);
+compile(T, [{encoding, InEncoding}]) when is_list(T) ->
+    sgte_parse:parse(T, InEncoding).
 
 %%--------------------------------------------------------------------
 %% @spec compile_file(FileName) -> {ok, C::compiled()} | {error,Reason}
@@ -76,6 +96,20 @@ compile_file(FileName) ->
 	Err -> 
 	    Err
     end.
+%%--------------------------------------------------------------------
+%% @spec compile_file(FileName, Options::options()) -> {ok, C::compiled()} | {error,Reason}
+%%
+%% @doc Compiles the template file FileName and returns the compiled 
+%% template or an error.
+%% @end
+%%--------------------------------------------------------------------
+compile_file(FileName, Options) ->
+    case file:read_file(FileName) of
+	{ok, Bin} ->
+	    compile(Bin, Options);
+	Err -> 
+	    Err
+    end.
 
 %%--------------------------------------------------------------------
 %% @spec render(C::compiled(), 
@@ -84,7 +118,7 @@ compile_file(FileName) ->
 %%
 %% @type data() = [tuple()]|dict()
 %% @type options() = [option()]
-%%       option()  = quiet|{gettext_lc, string()}.
+%%       option()  = quiet|{gettext_lc, string()}|{encoding, encoding()}.
 %%
 %% @doc Renders the compiled template.
 %% @end
@@ -151,6 +185,27 @@ gettext_strings(FileName) ->
     case file:read_file(FileName) of
 	{ok, Bin} ->
 	    gettext_strings(Bin);
+	Err -> 
+	    Err
+    end.
+
+%%--------------------------------------------------------------------
+%% @spec gettext_strings(T::template(), {encoding, Enc::encoding}) -> [gettext_tuple()]
+%%
+%% @type gettext_tuple() = {Key, LineNo}
+%%
+%% @doc Extracts from template T the list of gettext keys 
+%% with associated line numbers.
+%% This is a utility function to use in cojunction with gettext
+%% to create initial .po files.
+%% @end
+%%--------------------------------------------------------------------
+gettext_strings(Template, Enc) when is_binary(Template) ->
+    sgte_parse:gettext_strings(unicode:characters_to_list(Template, Enc));
+gettext_strings(FileName, Enc) ->
+    case file:read_file(FileName) of
+	{ok, Bin} ->
+	    gettext_strings(Bin, Enc);
 	Err -> 
 	    Err
     end.
