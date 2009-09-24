@@ -314,7 +314,7 @@ collect_ift([H|Rest], InEncoding, Token, T, Line) ->
     collect_ift(Rest, InEncoding, [H|Token], T, Line).
 
 %%--------------------------------------------------------------------
-%% @spec parse_ift({Test, Then, Else}) -> if_token()
+%% @spec parse_ift({Test, Then, Else}, InEncoding::encoding()) -> if_token()
 %%
 %% @doc if token parser
 %% @end
@@ -332,7 +332,7 @@ parse_ift({Test, Then, Else}, InEncoding) ->
 	    }
     end;
 %%--------------------------------------------------------------------
-%% @spec parse_ift({Test, Then}) -> if_token()
+%% @spec parse_ift({Test, Then}, InEncoding::encoding()) -> if_token()
 %%
 %% @doc if token parser
 %% @end
