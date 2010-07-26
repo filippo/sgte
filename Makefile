@@ -23,7 +23,7 @@ DOCDIR = doc
 
 all: conf compile
 
-compile:
+compile: conf
 	mkdir -p ebin/
 	cd src && $(MAKE)
 
