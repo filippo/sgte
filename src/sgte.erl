@@ -192,8 +192,6 @@ gettext_strings(FileName) ->
 %%--------------------------------------------------------------------
 %% @spec gettext_strings(T::template(), {encoding, Enc::encoding}) -> [gettext_tuple()]
 %%
-%% @type gettext_tuple() = {Key, LineNo}
-%%
 %% @doc Extracts from template T the list of gettext keys 
 %% with associated line numbers.
 %% This is a utility function to use in cojunction with gettext

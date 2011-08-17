@@ -461,8 +461,6 @@ until(P, [H|T], Line, Parsed) ->
 %%--------------------------------------------------------------------
 %% @spec until_space(predicate()) -> parsed()|{error, Reason}
 %%
-%% @type predicate() = funfunction(template()).
-%%
 %% @doc until predicate P: output whatever it gets 
 %% until P(H) is true without stripping white spaces.
 %% @end
@@ -488,8 +486,6 @@ until_space(P, [H|T], Line, Parsed) ->
 
 %%--------------------------------------------------------------------
 %% @spec until_greedy(predicate()) -> parsed()|{error, Reason}
-%%
-%% @type predicate() = function(template()).
 %%
 %% @doc until Greedy version: 
 %% output whatever it gets until a $ is reached 

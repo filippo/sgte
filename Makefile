@@ -23,7 +23,7 @@ DOCDIR = doc
 
 all: conf compile
 
-compile:
+compile: conf
 	mkdir -p ebin/
 	cd src && $(MAKE)
 
@@ -37,10 +37,11 @@ conf_clean:
 test: conf compile
 	cd test/src&& $(MAKE)
 
-docs: $(SRC_FILES)
-	erl -noshell -run edoc_run files \
-		["'src/sgte.erl', 'src/sgte_parse.erl', 'src/sgte_render.erl', 'src/sgte_gettext.erl', 'src/sgte_dict.erl'"] \
-		'[{dir,"$(DOCDIR)"}]' -s init stop
+docs: $(DOCDIR)/index.html
+
+$(DOCDIR)/index.html: $(SRC_FILES)
+	erl -noshell -run edoc_run application "sgte" '"."' '[]'
+
 tags: src/*.erl
 	cd src/ && $(TAG_CMD) $(TAG_FLAGS) $(TAG_FILES)
 
