@@ -37,7 +37,11 @@ tmpl$ baz",
 
 apply_test_() ->
     {ok, C} = sgte:compile("foo $apply bar myVar$ baz"),
-    ?_assert(C =:= [<<"foo ">>, {apply, {[bar], [myVar]}, 1}, <<" baz">>]).
+    {ok, C1} = sgte:compile("foo $myVar:bar$ baz"),
+    [?_assert(C =:= [<<"foo ">>, {apply, {[bar], [myVar]}, 1}, <<" baz">>]),
+     ?_assert(C1 =:= [<<"foo ">>, {apply, {[bar], [myVar]}, 1}, <<" baz">>]),
+     ?_assert(C =:= C1)].
+
 
 map_test_() ->
     {ok, C} = sgte:compile("foo $map bar varList$ baz"),

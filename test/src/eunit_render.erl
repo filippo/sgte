@@ -43,9 +43,13 @@ include_test_() ->
 apply_test_() ->
     F = fun(L) -> lists:nth(2, L) end,
     {ok, C} = sgte:compile("foo $apply second myList$ baz"),
+    {ok, C1} = sgte:compile("foo $myList:second$ baz"),
     Res = sgte:render(C, [{second, F}, {myList, ["1", "2", "3"]}]),
+    Res1 = sgte:render(C1, [{second, F}, {myList, ["1", "2", "3"]}]),
     ResultStr = [<<"foo ">>, "2", <<" baz">>],
-    ?_assert(Res =:= ResultStr).
+    [?_assert(Res =:= ResultStr),
+     ?_assert(Res1 =:= ResultStr),
+     ?_assert(Res =:= Res1)].
 
 simpleif_test_() ->
     {ok, C} = sgte:compile(simple_if()),

@@ -221,7 +221,18 @@ parse_key([H|T], _InEncoding, Line) ->
 	    P =  until(fun is_dollar/1),
 	    case P([H|T]) of
 		{ok, Token, LinesParsed, Rest} ->
-		    {ok, {attribute, Token, Line}, LinesParsed, Rest};
+		    case Token of
+			[Attr] ->
+			    T1 = atom_to_list(Attr),
+			    case string:tokens(T1, ":") of
+				[Val, Fun] ->
+				    {ok, {apply, {[list_to_atom(Fun)], [list_to_atom(Val)]}, Line}, LinesParsed, Rest};
+				_ ->
+				    {ok, {attribute, Token, Line}, LinesParsed, Rest}
+			    end;
+			_ ->
+			    {ok, {attribute, Token, Line}, LinesParsed, Rest}
+		    end;
 		{error, Reason} -> 
 		    {error, {attribute, Reason, Line}}
 	    end;
