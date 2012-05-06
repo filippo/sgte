@@ -1,10 +1,10 @@
 @title sgte - A simple Erlang Template Engine
 
-@doc 
-<p><em>sgte</em> is a library implementing a Template Engine. 
+@doc
+<p><em>sgte</em> is a library implementing a Template Engine.
 The template system is inspired on <a href="http://www.stringtemplate.org">String Template</a>
 </p><p>
-The template source can be a string or binary or a filename. 
+The template source can be a string or binary or a filename.
 The use of the engine is as simple as (from the command line):
 <pre>
 > {ok, Compiled} = sgte:compile(TmplStr),
@@ -16,10 +16,10 @@ or:
 > sgte:render(Compiled, Data).
 </pre>
 
-When compile/1 or compile_file/1 are called, the template is "compiled" 
+When compile/1 or compile_file/1 are called, the template is "compiled"
 to an internal representation made of mixed binaries and erlang terms.
 
-Then one of the render functions (render, render_str, or render_bin) 
+Then one of the render functions (render, render_str, or render_bin)
 can be called passing the Data to be rendered in the template.
 <ul>
     <li>render/2 and render/3 returns a deep iolist() suitable e.g. to use in yaws</li>
@@ -32,13 +32,13 @@ the produced is easier to read.
 </p>
 <p>
 Data can be a Dict or a proplist (e.g. [{attr1, Val1}, {attr2, Val2}])
-Values can be a simple value or a function/1. In this case the function is 
+Values can be a simple value or a function/1. In this case the function is
 called with Data as an argument.
 </p>
 
 <h3>Template Features</h3>
 <h4>Attribute reference</h4>
-Attribute reference is written as: 
+Attribute reference is written as:
 <pre>
 $name$
 </pre> Here is an example:
@@ -72,7 +72,7 @@ $apply myFun aVar$
 result of myFun(aVar). Otherwhise the result is the value of
 myFun.
 
-<h4>Conditional evaluation</h4> 
+<h4>Conditional evaluation</h4>
   <pre>
   $if title$
       &lt;h1&gt;$title$&lt;/h1&gt;
@@ -87,7 +87,7 @@ if names is a list [{username, "foo"}, {username, "bar"}]
 $map li names$
 </pre>
 map li template to names. Each element in names is passed to the template with name attr.
-If li is the template: 
+If li is the template:
 <pre>
 &lt;li&gt;&lt;b&gt;$username$&lt;/b&gt;&lt;/li&gt;</pre>
 We get the result:
@@ -115,7 +115,7 @@ $map:{&lt;li&gt;&lt;b&gt;$username$&lt;/b&gt;&lt;/li&gt;} names$
 </pre>
 
 <h4>Internationalization support using gettext</h4>
-Gettext is a package that can be found in <a href="http://jungerl.sourceforge.net/">jungerl</a>. It 
+Gettext is a package that can be found in <a href="http://jungerl.sourceforge.net/">jungerl</a>. It
 supports internationalization using the <a href="http://www.gnu.org/software/gettext/">GNU Gettext format</a>.
 <pre>
 $txt:{Hello World}$

@@ -25,12 +25,12 @@
 -endif.
 
 %% API
--export([compile/1, 
+-export([compile/1,
          compile/2,
-         compile_file/1, 
-         compile_file/2, 
-         render/2, 
-         render/3, 
+         compile_file/1,
+         compile_file/2,
+         render/2,
+         render/3,
          render_str/2,
          render_str/3,
          render_bin/2,
@@ -57,7 +57,7 @@
 %%   @type compiled() = [char()|token()]
 %%          token() = tupe().
 %%
-%% @doc Compiles the template string T and returns the compiled 
+%% @doc Compiles the template string T and returns the compiled
 %% template or an error.
 %% @end
 %%--------------------------------------------------------------------
@@ -73,7 +73,7 @@ compile(T) when is_list(T) ->
 %%       option()  = {encoding, encoding()},
 %%       encoding()  = latin1 | utf8 | {utf16,little} | {utf16,big} | {utf32,little} | {utf32,big}
 %%
-%% @doc Compiles the template string T and returns the compiled 
+%% @doc Compiles the template string T and returns the compiled
 %% template or an error.
 %% @end
 %%--------------------------------------------------------------------
@@ -85,35 +85,35 @@ compile(T, [{encoding, InEncoding}]) when is_list(T) ->
 %%--------------------------------------------------------------------
 %% @spec compile_file(FileName) -> {ok, C::compiled()} | {error,Reason}
 %%
-%% @doc Compiles the template file FileName and returns the compiled 
+%% @doc Compiles the template file FileName and returns the compiled
 %% template or an error.
 %% @end
 %%--------------------------------------------------------------------
 compile_file(FileName) ->
     case file:read_file(FileName) of
-	{ok, Bin} ->
-	    compile(Bin);
-	Err -> 
-	    Err
+        {ok, Bin} ->
+            compile(Bin);
+        Err ->
+            Err
     end.
 %%--------------------------------------------------------------------
 %% @spec compile_file(FileName, Options::options()) -> {ok, C::compiled()} | {error,Reason}
 %%
-%% @doc Compiles the template file FileName and returns the compiled 
+%% @doc Compiles the template file FileName and returns the compiled
 %% template or an error.
 %% @end
 %%--------------------------------------------------------------------
 compile_file(FileName, Options) ->
     case file:read_file(FileName) of
-	{ok, Bin} ->
-	    compile(Bin, Options);
-	Err -> 
-	    Err
+        {ok, Bin} ->
+            compile(Bin, Options);
+        Err ->
+            Err
     end.
 
 %%--------------------------------------------------------------------
-%% @spec render(C::compiled(), 
-%%              Data::data(), 
+%% @spec render(C::compiled(),
+%%              Data::data(),
 %%              Options::options()) -> string()
 %%
 %% @type data() = [tuple()]|dict()
@@ -173,7 +173,7 @@ render_bin(Compiled, Data) ->
 %%
 %% @type gettext_tuple() = {Key, LineNo}
 %%
-%% @doc Extracts from template T the list of gettext keys 
+%% @doc Extracts from template T the list of gettext keys
 %% with associated line numbers.
 %% This is a utility function to use in cojunction with gettext
 %% to create initial .po files.
@@ -183,16 +183,16 @@ gettext_strings(Template) when is_binary(Template) ->
     sgte_parse:gettext_strings(unicode:characters_to_list(Template));
 gettext_strings(FileName) ->
     case file:read_file(FileName) of
-	{ok, Bin} ->
-	    gettext_strings(Bin);
-	Err -> 
-	    Err
+        {ok, Bin} ->
+            gettext_strings(Bin);
+        Err ->
+            Err
     end.
 
 %%--------------------------------------------------------------------
 %% @spec gettext_strings(T::template(), {encoding, Enc::encoding}) -> [gettext_tuple()]
 %%
-%% @doc Extracts from template T the list of gettext keys 
+%% @doc Extracts from template T the list of gettext keys
 %% with associated line numbers.
 %% This is a utility function to use in cojunction with gettext
 %% to create initial .po files.
@@ -202,10 +202,10 @@ gettext_strings(Template, Enc) when is_binary(Template) ->
     sgte_parse:gettext_strings(unicode:characters_to_list(Template, Enc));
 gettext_strings(FileName, Enc) ->
     case file:read_file(FileName) of
-	{ok, Bin} ->
-	    gettext_strings(Bin, Enc);
-	Err -> 
-	    Err
+        {ok, Bin} ->
+            gettext_strings(Bin, Enc);
+        Err ->
+            Err
     end.
 
 %%--------------------------------------------------------------------
@@ -214,9 +214,9 @@ gettext_strings(FileName, Enc) ->
 %%
 %% @type src_files()  = [string()]. Source files to parse for gettext strings.
 %%
-%% @doc Creates the gettext template file (.pot). 
-%% SrcFiles is the list of files to be parsed for gettext strings. 
-%% Each gettext string found will be written to the .pot file. 
+%% @doc Creates the gettext template file (.pot).
+%% SrcFiles is the list of files to be parsed for gettext strings.
+%% Each gettext string found will be written to the .pot file.
 %% The default name of the generated file will be messages.pot.
 %% @end
 %%--------------------------------------------------------------------
@@ -225,17 +225,17 @@ gettext_init(SrcFiles) ->
     sgte_gettext:gettext_init(TargetDir, SrcFiles, "messages.pot").
 
 %%--------------------------------------------------------------------
-%% @spec gettext_init(TargetDir::target_dir(), 
-%%                    SrcFiles::src_files()) -> 
+%% @spec gettext_init(TargetDir::target_dir(),
+%%                    SrcFiles::src_files()) ->
 %%                            ok | {error, Reason}
 %%
 %% @type target_dir() = string(). Dir where the .pot file will be written
 %%
-%% @doc Creates the gettext template file (.pot). 
-%% TargetDir is the directory where the file will be created. 
-%% If TargetDir doesn't exists it will be created. 
-%% SrcFiles is the list of files to be parsed for gettext strings. 
-%% Each gettext string found will be written to the .pot file. 
+%% @doc Creates the gettext template file (.pot).
+%% TargetDir is the directory where the file will be created.
+%% If TargetDir doesn't exists it will be created.
+%% SrcFiles is the list of files to be parsed for gettext strings.
+%% Each gettext string found will be written to the .pot file.
 %% The file name of the generated file will be messages.pot.
 %% @end
 %%--------------------------------------------------------------------
@@ -243,19 +243,19 @@ gettext_init(TargetDir, SrcFiles) ->
     sgte_gettext:gettext_init(TargetDir, SrcFiles, "messages.pot").
 
 %%--------------------------------------------------------------------
-%% @spec gettext_init(TargetDir::target_dir(), 
-%%                    SrcFiles::src_files(), 
-%%                    Domain::domain()) -> 
+%% @spec gettext_init(TargetDir::target_dir(),
+%%                    SrcFiles::src_files(),
+%%                    Domain::domain()) ->
 %%                            ok | {error, Reason}
 %%
 %% @type domain() = string(). The name of the .po file to write.
 %%
-%% @doc Creates the gettext template file (.pot). 
-%% TargetDir is the directory where the file will be created. 
-%% If TargetDir doesn't exists it will be created. 
-%% SrcFiles is the list of files to be parsed for gettext strings. 
-%% Each gettext string found will be written to the .pot file. 
-%% Domain (when present) is the name of the file to generate. 
+%% @doc Creates the gettext template file (.pot).
+%% TargetDir is the directory where the file will be created.
+%% If TargetDir doesn't exists it will be created.
+%% SrcFiles is the list of files to be parsed for gettext strings.
+%% Each gettext string found will be written to the .pot file.
+%% Domain (when present) is the name of the file to generate.
 %% If no Domain is defined the default name will be messages.pot.
 %% @end
 %%--------------------------------------------------------------------

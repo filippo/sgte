@@ -12,15 +12,15 @@
 %%
 string_test_() ->
     Str = "This is a test:\n" ++
-	"$testFun()$ followed by $testData$ and unicode chars àèìòù",
+        "$testFun()$ followed by $testData$ and unicode chars àèìòù",
     {ok, Compiled} = sgte:compile(Str),
     Res1 = sgte:render_str(Compiled, []),
     Res2 = sgte:render_str(Compiled, [], [quiet]),
     ResultStr1 = "This is a test:\n" ++
-	"[SGTE Warning: template: attribute - key 'testFun()' not found on line 2] followed by [SGTE Warning: template: attribute - key testData not found on line 2] and unicode chars àèìòù",
+        "[SGTE Warning: template: attribute - key 'testFun()' not found on line 2] followed by [SGTE Warning: template: attribute - key testData not found on line 2] and unicode chars àèìòù",
     ResultStr2 = "This is a test:\n" ++
-	" followed by  and unicode chars àèìòù",
-    [?_assert(Res1 =:= ResultStr1), 
+        " followed by  and unicode chars àèìòù",
+    [?_assert(Res1 =:= ResultStr1),
      ?_assert(Res2 =:= ResultStr2)].
 
 include_test_() ->
@@ -54,8 +54,8 @@ if_test_() ->
     Res1 = sgte:render_str(Compiled, Data1, [quiet]),
     Res2 = sgte:render_str(Compiled, Data2, [quiet]),
     [?_assert(Res1 =:= "Hello! Some Mountains:  Bye Bye."),
-     ?_assert(Res2 =:= "Hello!  Bye Bye.")].    
-    
+     ?_assert(Res2 =:= "Hello!  Bye Bye.")].
+
 fif_test_() ->
     {ok, Compiled} = sgte:compile(if_string()),
     NameL = mountainList(),
@@ -94,22 +94,22 @@ fun_test_() ->
 %% Template String
 simple_if() ->
     "Start $if test$" ++
-	"then branch" ++
+        "then branch" ++
         "$else$" ++
-	"else branch"++
-	"$end if$".
+        "else branch"++
+        "$end if$".
 
 if_string() ->
     "Hello! $if testNames$" ++
-	"Some Mountains: $join:{, } nameList$" ++
+        "Some Mountains: $join:{, } nameList$" ++
         "$else$" ++
-	"$noName$$end if$" ++ " Bye Bye.".
+        "$noName$$end if$" ++ " Bye Bye.".
 
 nested_if_string() ->
     "$if testNames$" ++
-	"Some Mountains: $if testNames$$join:{, } nameList$$end if$" ++
+        "Some Mountains: $if testNames$$join:{, } nameList$$end if$" ++
         "$else$" ++
-	"$noName$$end if$".
+        "$noName$$end if$".
 
 check_names(NameList) ->
     length(NameList) > 0.

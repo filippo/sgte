@@ -3,8 +3,8 @@
 -export([run_tests/0, run_tests/1]).
 
 run_tests() ->
-    run_tests([eunit_compile, 
-               eunit_render, 
+    run_tests([eunit_compile,
+               eunit_render,
                eunit_render_str,
                eunit_render_bin,
                eunit_render_map,

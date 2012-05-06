@@ -8,7 +8,7 @@ SHELL = /bin/sh
 
 #tags command and options
 TAG_CMD = etags
-TAG_FLAGS = 
+TAG_FLAGS =
 
 LIB_FILES = /usr/local/lib/erlang/lib/sg*/*.erl /usr/local/lib/erlang/lib/sg*/src/*.erl
 

@@ -9,10 +9,10 @@
 %%--------------------
 %%
 %% Render Test
-%%    
+%%
 string_test_() ->
     Str = "This is a test:\n" ++
-	"$testFun()$ followed by $testData$ and unicode characters  àèìòù",
+        "$testFun()$ followed by $testData$ and unicode characters  àèìòù",
     {ok, Compiled} = sgte:compile(Str),
     Res = sgte:render_str(Compiled, data()),
     ResultStr = "This is a test:\n" ++
@@ -22,7 +22,7 @@ string_test_() ->
         " and unicode characters  àèìòù",
     %% error test
     Str2 = "This is a test:\n" ++
-	"$testFun()$ followed by $testData$ and unicode chars àèìòù",
+        "$testFun()$ followed by $testData$ and unicode chars àèìòù",
     {ok, Compiled2} = sgte:compile(Str2),
     Res2 = sgte:render_str(Compiled2, []),
     ResultStr2 = "This is a test:\n"++
@@ -90,14 +90,14 @@ if_test_() ->
     Res2 = sgte:render_str(Compiled, Data2),
     [?_assert(Res1 =:= "Hello! Some Mountains: "++
               "Monte Bianco, Cerro Torre, Mt. Everest, Catinaccio Bye Bye."),
-     ?_assert(Res2 =:= "Hello! No Name Found Bye Bye.")].    
-    
+     ?_assert(Res2 =:= "Hello! No Name Found Bye Bye.")].
+
 fif_test_() ->
     {ok, Compiled} = sgte:compile(if_string()),
     NameL = mountainList(),
     Data = [{testNames, check_names(NameL)},
-	    {noName, fun no_name/1},
-	    {nameList, NameL}],
+            {noName, fun no_name/1},
+            {nameList, NameL}],
     Res = sgte:render_str(Compiled, Data),
     {ok, Compiled2} = sgte:compile(if_string()),
     D1 = dict:new(),
@@ -129,9 +129,9 @@ join_test_() ->
 % test callable attribute
 fun_test_() ->
     MyF = fun(Data) ->
-		  {ok, V} = dict:find(foo, Data),
-		  "TEST: " ++ V
-	  end,
+                  {ok, V} = dict:find(foo, Data),
+                  "TEST: " ++ V
+          end,
     {ok, CF} = sgte:compile(tmpl_fun()),
     Res = sgte:render_str(CF, [{foo, "foooo"}, {callme, MyF}]),
     ?_assert(Res =:= "aaaa TEST: foooo bbb").
@@ -155,22 +155,22 @@ js_support_test_() ->
 %% Template String
 simple_if() ->
     "Start $if test$" ++
-	"then branch" ++
+        "then branch" ++
         "$else$" ++
-	"else branch"++
-	"$end if$".
+        "else branch"++
+        "$end if$".
 
 if_string() ->
     "Hello! $if testNames$" ++
-	"Some Mountains: $join:{, } nameList$" ++
+        "Some Mountains: $join:{, } nameList$" ++
         "$else$" ++
-	"$noName$$end if$" ++ " Bye Bye.".
+        "$noName$$end if$" ++ " Bye Bye.".
 
 nested_if_string() ->
     "$if testNames$" ++
-	"Some Mountains: $if testNames$$join:{, } nameList$$end if$" ++
+        "Some Mountains: $if testNames$$join:{, } nameList$$end if$" ++
         "$else$" ++
-	"$noName$$end if$".
+        "$noName$$end if$".
 
 no_name(_Foo) ->
     "No Name Found".
