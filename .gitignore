@@ -5,3 +5,4 @@ aclocal.m4
 autom4te.cache
 include.mk
 config*
+_build
