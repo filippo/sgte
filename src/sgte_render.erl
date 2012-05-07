@@ -15,11 +15,11 @@
 %%% srl. Portions created by S.G. Consulting s.r.l. are Copyright (C)
 %%% 2007 S.G. Consulting srl. All Rights Reserved.
 %%%
-%%% @doc 
-%%% <p>Renders the compiled template and returns the 
+%%% @doc
+%%% <p>Renders the compiled template and returns the
 %%% resulting string.</p>
 %%%
-%%% <p>This module is not meant to be used directly. It's called 
+%%% <p>This module is not meant to be used directly. It's called
 %%% through the interface of the sgte module.</p>
 %%% @end
 %%%
@@ -32,10 +32,10 @@
 -import(.string).   % ditto
 -endif.
 
--export([render/2, 
-         render/3, 
-         render_str/2, 
-         render_str/3, 
+-export([render/2,
+         render/3,
+         render_str/2,
+         render_str/3,
          render_bin/2,
          render_bin/3]).
 
@@ -62,7 +62,7 @@ render_str(Compiled, Data) ->
 %%--------------------------------------------------------------------
 render_bin(Compiled, Data, Options) ->
     to_bin(render(Compiled, Data, Options)).
-    
+
 %%--------------------------------------------------------------------
 %% @spec render_bin(compiled(), data()) -> binary()
 %% @doc Calls render/2 and converts the result to binary.
@@ -70,7 +70,7 @@ render_bin(Compiled, Data, Options) ->
 %%--------------------------------------------------------------------
 render_bin(Compiled, Data) ->
     to_bin(render(Compiled, Data)).
-    
+
 %%--------------------------------------------------------------------
 %% @spec render(compiled(), data(), options()) -> string()
 %% @doc Calls render/2 passing options in the data.
@@ -95,7 +95,7 @@ render(Compiled, Data) ->
 
 %%--------------------------------------------------------------------
 %% @spec render1(compiled(), data(), {Key, Value}) -> string()
-%% @doc Renders the compiled template and returns it. 
+%% @doc Renders the compiled template and returns it.
 %% Used to render map tokens.
 %% @end
 %%--------------------------------------------------------------------
@@ -110,7 +110,7 @@ render1(Compiled, Data, Attr) ->
     Data1 = sgte_dict:store(K, V, Data),
     [render_element(X, Data1) || X <- Compiled].
 
-    
+
 %%--------------------------------------------------------------------
 %%% Internal functions
 %%--------------------------------------------------------------------
@@ -165,7 +165,7 @@ render_final(Attribute, _Data) ->
 
 %%--------------------------------------------------------------------
 %% @spec render_final(term()) -> string()|{error, Reason}
-%% @doc Render on final attribute. 
+%% @doc Render on final attribute.
 %% @end
 %%--------------------------------------------------------------------
 render_final(Term) when is_boolean(Term) ->
@@ -178,7 +178,7 @@ render_final(Term) when is_tuple(Term) ->
     render_error({error, {Term, tuple, invalid_data}});
 render_final(Term) ->
     Term.
-    
+
 %%--------------------------------------------------------------------
 %% @spec render_element(token(), data()) -> string()|{error, Reason}
 %% @doc Render a token from the parsed template.
@@ -186,17 +186,17 @@ render_final(Term) ->
 %%--------------------------------------------------------------------
 render_element({attribute, AttrList, Line}, Data) ->
     case get_value(AttrList, Data, attribute) of
-	{error, X} ->
-	    on_error(fun empty_string/0, Data, X, Line);
+        {error, X} ->
+            on_error(fun empty_string/0, Data, X, Line);
         V ->
             printable(V, fun(El) -> render_final(El, Data) end)
     end;
 render_element({join, {Separator, Term}, Line}, Data) ->
     case get_value(Term, Data, join) of
-	{error, X} ->
-	    on_error(fun empty_string/0, Data, X, Line);
-	ValueList ->
-	    Concat = lists:flatten([printable(X, fun(El) -> El end)++Separator 
+        {error, X} ->
+            on_error(fun empty_string/0, Data, X, Line);
+        ValueList ->
+            Concat = lists:flatten([printable(X, fun(El) -> El end)++Separator
                                     || X <- ValueList]),
             case Concat of
                 [] -> Concat;
@@ -207,148 +207,148 @@ render_element({join, {Separator, Term}, Line}, Data) ->
 
 render_element({include, Tmpl, Line}, Data) -> %% include template passing all data
     case get_value(Tmpl, Data, include) of
-	{error, X} ->
-	    on_error(fun empty_string/0, Data, X, Line);
-	Compiled ->
-	    render(Compiled, Data)
+        {error, X} ->
+            on_error(fun empty_string/0, Data, X, Line);
+        Compiled ->
+            render(Compiled, Data)
     end;
 
 render_element({apply, {Callable, VarList}, Line}, Data) -> %% apply first element to VarList
     case get_value(Callable, Data, apply) of
-	{error, X} ->
-	    on_error(fun empty_string/0, Data, X, Line);
-	ToCall ->
-	    case get_value(VarList, Data, apply) of
-		{error, X} ->
-		    on_error(fun empty_string/0, Data, X, Line);
-		Value ->
-		    printable(ToCall(Value), fun(El) -> El end)
-	    end
+        {error, X} ->
+            on_error(fun empty_string/0, Data, X, Line);
+        ToCall ->
+            case get_value(VarList, Data, apply) of
+                {error, X} ->
+                    on_error(fun empty_string/0, Data, X, Line);
+                Value ->
+                    printable(ToCall(Value), fun(El) -> El end)
+            end
     end;
 
 render_element({map, {Tmpl, Term}, Line}, Data) ->
     case {get_value(Tmpl, Data, map), get_value(Term, Data, map)} of
-	{{error, X}, _} ->
-	    on_error(fun empty_string/0, Data, X, Line);
-	{_, {error, X}} ->
-	    on_error(fun empty_string/0, Data, X, Line);
-	{CT, ValueList} ->
-	    [render1(CT, Data, V) || V <- ValueList]
+        {{error, X}, _} ->
+            on_error(fun empty_string/0, Data, X, Line);
+        {_, {error, X}} ->
+            on_error(fun empty_string/0, Data, X, Line);
+        {CT, ValueList} ->
+            [render1(CT, Data, V) || V <- ValueList]
     end;
 render_element({mapl, {Tmpl, Term}, Line}, Data) ->
     case {get_value(Tmpl, Data, mapl), get_value(Term, Data, mapl)} of
-	{{error, X}, _} ->
-	    on_error(fun empty_string/0, Data, X, Line);
-	{_, {error, X}} ->
-	    on_error(fun empty_string/0, Data, X, Line);
-	{CT, ValueList} ->
-	    [render1(CT, Data, {attr, V}) || V <- ValueList]
+        {{error, X}, _} ->
+            on_error(fun empty_string/0, Data, X, Line);
+        {_, {error, X}} ->
+            on_error(fun empty_string/0, Data, X, Line);
+        {CT, ValueList} ->
+            [render1(CT, Data, {attr, V}) || V <- ValueList]
     end;
 render_element({mapj, {Tmpl, Term, Separator}, Line}, Data) ->
-    case {get_value(Tmpl, Data, map), 
-	  get_value(Term, Data, mapj), 
-	  get_value(Separator, Data, mapj)} of
-	{{error, X}, _, _} ->
-	    on_error(fun empty_string/0, Data, X, Line);
-	{_, {error, X}, _} ->
-	    on_error(fun empty_string/0, Data, X, Line);
-	{_, _, {error, X}} ->
-	    on_error(fun empty_string/0, Data, X, Line);
-	{CT, ValueList, CSep} ->
-	    MappedVal = [render1(CT, Data, V) || V <- ValueList],
-	    Concat = lists:flatten([X++CSep || X <- MappedVal]),
-	    Value = string:sub_string(Concat, 1, length(Concat)-length(CSep)),
-	    Value
+    case {get_value(Tmpl, Data, map),
+          get_value(Term, Data, mapj),
+          get_value(Separator, Data, mapj)} of
+        {{error, X}, _, _} ->
+            on_error(fun empty_string/0, Data, X, Line);
+        {_, {error, X}, _} ->
+            on_error(fun empty_string/0, Data, X, Line);
+        {_, _, {error, X}} ->
+            on_error(fun empty_string/0, Data, X, Line);
+        {CT, ValueList, CSep} ->
+            MappedVal = [render1(CT, Data, V) || V <- ValueList],
+            Concat = lists:flatten([X++CSep || X <- MappedVal]),
+            Value = string:sub_string(Concat, 1, length(Concat)-length(CSep)),
+            Value
     end;
 render_element({mmap, {Tmpl, Term}, Line}, Data) ->
     case get_value(Term, Data, mmap) of
-	{error, X} ->
-	    on_error(fun empty_string/0, Data, X, Line);
-	ValueList ->
-	    ExtractTmpl = fun(El, Acc) ->
-				  Compiled = get_value(El, Data, map),
-				  [Compiled|Acc]
-			  end,
-	    CompiledList = lists:reverse(lists:foldl(ExtractTmpl, [], Tmpl)),
-	    % Zipped is a tuple list: [{tmpl1, val1}, {tmpl2, val2},{tmpl1, val3} ...]
-	    Zipped = group(CompiledList, ValueList), 
-	    [render1(CT, Data, V) || {CT, V} <- Zipped]
+        {error, X} ->
+            on_error(fun empty_string/0, Data, X, Line);
+        ValueList ->
+            ExtractTmpl = fun(El, Acc) ->
+                                  Compiled = get_value(El, Data, map),
+                                  [Compiled|Acc]
+                          end,
+            CompiledList = lists:reverse(lists:foldl(ExtractTmpl, [], Tmpl)),
+            % Zipped is a tuple list: [{tmpl1, val1}, {tmpl2, val2},{tmpl1, val3} ...]
+            Zipped = group(CompiledList, ValueList),
+            [render1(CT, Data, V) || {CT, V} <- Zipped]
     end;
 render_element({imap, {[TmplList], Term}, Line}, Data) ->
     case get_value(Term, Data, imap) of
-	{error, X} ->
-	    on_error(fun empty_string/0, Data, X, Line);
-	ValueList ->
-	    [render1(TmplList, Data, V) || V <- ValueList]
+        {error, X} ->
+            on_error(fun empty_string/0, Data, X, Line);
+        ValueList ->
+            [render1(TmplList, Data, V) || V <- ValueList]
     end;
 render_element({gettext, Key, Line}, Data) ->
     case gettext_lc(options(Data)) of
-	{error, X} ->
-	    on_error(fun () -> Key end, Data, X, Line);
-	LC ->
-	    case catch gettext:key2str(Key, LC) of
-		Translation when is_list(Translation) -> Translation;
-		_ -> Key
-	    end 
+        {error, X} ->
+            on_error(fun () -> Key end, Data, X, Line);
+        LC ->
+            case catch gettext:key2str(Key, LC) of
+                Translation when is_list(Translation) -> Translation;
+                _ -> Key
+            end
     end;
 render_element({ift, {{attribute, Test}, Then, Else}, Line}, Data) ->
     case get_value(Test, Data, ift) of
-	{error, X} -> % test not found -> false
-	    on_error(fun () -> render(Else, Data) end, 
-				Data, X, Line);
-		    
-	TestP ->
-	    case render_final(TestP, Data, test) of
-		false ->
-		    render(Else, Data);
-		[] ->
-		    render(Else, Data);
-		{} ->
-		    render(Else, Data);
-		0 ->
-		    render(Else, Data);
-		_ ->
-		    render(Then, Data)
-	    end
+        {error, X} -> % test not found -> false
+            on_error(fun () -> render(Else, Data) end,
+                                Data, X, Line);
+
+        TestP ->
+            case render_final(TestP, Data, test) of
+                false ->
+                    render(Else, Data);
+                [] ->
+                    render(Else, Data);
+                {} ->
+                    render(Else, Data);
+                0 ->
+                    render(Else, Data);
+                _ ->
+                    render(Then, Data)
+            end
     end;
 render_element({ift, {{attribute, Test}, Then}, Line}, Data) ->
     case get_value(Test, Data, ift) of
-	{error, X} -> % test not found -> false
-	    on_error(fun empty_string/0, Data, X, Line);
-	TestP ->
-	    case render_final(TestP, Data, test) of
-		false ->
-		    [];
-		[] ->
-		    [];
-		{} ->
-		    [];
-		0 ->
-		    [];
-		_ ->
-		    render(Then, Data)
-	    end
+        {error, X} -> % test not found -> false
+            on_error(fun empty_string/0, Data, X, Line);
+        TestP ->
+            case render_final(TestP, Data, test) of
+                false ->
+                    [];
+                [] ->
+                    [];
+                {} ->
+                    [];
+                0 ->
+                    [];
+                _ ->
+                    render(Then, Data)
+            end
     end;
 render_element(Term, _Data) ->
     render_final(Term).
 
 
 %%--------------------------------------------------------------------
-%% @spec on_error(Continuation::function(), 
-%%                Data::data(), 
+%% @spec on_error(Continuation::function(),
+%%                Data::data(),
 %%                ErrReason,
 %%                Line::int()) -> string()
-%% @doc In case of an error due to a value not passed in data 
-%% manage the result based on options. If the quiet option is set 
+%% @doc In case of an error due to a value not passed in data
+%% manage the result based on options. If the quiet option is set
 %% returns Continuation(), else a warning message is returned.
 %% @end
 %%--------------------------------------------------------------------
 on_error(Continuation, Data, ErrReason, Line) ->
     case is_quiet(options(Data)) of
-	true ->
-	    Continuation();
-	false ->
-	    render_error({warning, ErrReason, {line, Line}})
+        true ->
+            Continuation();
+        false ->
+            render_error({warning, ErrReason, {line, Line}})
     end.
 
 %%--------------------------------------------------------------------
@@ -356,7 +356,7 @@ on_error(Continuation, Data, ErrReason, Line) ->
 %% @doc Returns an empty string.
 %% @end
 %%--------------------------------------------------------------------
-empty_string() ->    
+empty_string() ->
     [].
 
 %%--------------------------------------------------------------------
@@ -382,8 +382,8 @@ render_error({error, {TmplEl, ErrMsg}, {line, LineNo}}) when is_list(ErrMsg) ->
 %% Utilities
 %%--------------------------------------------------------------------
 %%--------------------------------------------------------------------
-%% @spec get_value(Key::atom(), 
-%%                 Dict::sgte_dict(), 
+%% @spec get_value(Key::atom(),
+%%                 Dict::sgte_dict(),
 %%                 Where::atom()) -> Value|{error, Reason}
 %% @doc get Key from Dict. If Key is not found returns an error.
 %% Where is used to return a more desciptive error.
@@ -391,17 +391,17 @@ render_error({error, {TmplEl, ErrMsg}, {line, LineNo}}) when is_list(ErrMsg) ->
 %%--------------------------------------------------------------------
 get_value(Key, Dict, Where) when is_atom(Key) ->
     case sgte_dict:find(Key, Dict) of
-	{ok, V} ->
-	    V;
-	error ->
-	    {error, {Where, Key, not_found}}
+        {ok, V} ->
+            V;
+        error ->
+            {error, {Where, Key, not_found}}
     end;
 get_value(KeyList, Dict, Where) ->
     case sgte_dict:rfind(KeyList, Dict) of
-	{ok, V} ->
-	    V;
-	{error, Key} ->
-	    {error, {Where, Key, not_found}}
+        {ok, V} ->
+            V;
+        {error, Key} ->
+            {error, {Where, Key, not_found}}
     end.
 
 %%--------------------------------------------------------------------
@@ -430,10 +430,10 @@ group([H1|R1], [H2|R2], Recurring, Result) ->
 %%--------------------------------------------------------------------
 options(Data) ->
     case sgte_dict:find(options, Data) of
-	{ok, Options} ->
-	    Options;
-	_ ->
-	    []
+        {ok, Options} ->
+            Options;
+        _ ->
+            []
     end.
 
 %%--------------------------------------------------------------------
@@ -446,16 +446,16 @@ is_quiet(Options) ->
 
 %%--------------------------------------------------------------------
 %% @spec gettext_lc(options()) -> LC::string()
-%% @doc Search gettext_lc option Options List. 
+%% @doc Search gettext_lc option Options List.
 %% This is the language used to be used by gettext in the rendering.
 %% @end
 %%--------------------------------------------------------------------
-gettext_lc(Options) ->    
-    case lists:keysearch(gettext_lc, 1, Options) of 
-	{value, {gettext_lc, LC}} ->
-	    LC;
-	false ->
-	    {error, {gettext, gettext_lc, not_found}}
+gettext_lc(Options) ->
+    case lists:keysearch(gettext_lc, 1, Options) of
+        {value, {gettext_lc, LC}} ->
+            LC;
+        false ->
+            {error, {gettext, gettext_lc, not_found}}
     end.
 
 %%--------------------------------------------------------------------

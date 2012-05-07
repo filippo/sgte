@@ -44,7 +44,7 @@ AC_SUBST(LD_SHARED)
 
 
 define(OUTPUT_FILES,
-	include.mk)
+        include.mk)
 
 AC_OUTPUT(OUTPUT_FILES,
 [

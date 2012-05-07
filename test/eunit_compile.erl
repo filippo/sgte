@@ -18,7 +18,7 @@ multi_attr_test_() ->
     ?_assert(Compiled =:= [{attribute, [foo, bar, baz], 1}]).
 
 multiline_attr_test_() ->
-    Str = "foo 
+    Str = "foo
 $bar
 $
  baz",
@@ -82,8 +82,8 @@ if_test_() ->
 %% Template String
 simple_if() ->
     "Start $if test.flag$" ++
-	"then branch" ++
+        "then branch" ++
         "$else$" ++
-	"else branch"++
-	"$end if$".
+        "else branch"++
+        "$end if$".
 

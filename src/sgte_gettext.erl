@@ -15,11 +15,11 @@
 %%% srl. Portions created by S.G. Consulting s.r.l. are Copyright (C)
 %%% 2007 S.G. Consulting srl. All Rights Reserved.
 %%%
-%%% @doc 
-%%% <p>Helper functions to generate the gettext po template 
+%%% @doc
+%%% <p>Helper functions to generate the gettext po template
 %%% file (.pot).</p>
 %%%
-%%% <p>This module is not meant to be used directly. It's called 
+%%% <p>This module is not meant to be used directly. It's called
 %%% through the interface of the sgte module.</p>
 %%% @end
 %%%
@@ -39,17 +39,17 @@
 %% API
 %%====================================================================
 %%--------------------------------------------------------------------
-%% @spec gettext_init(TargetDir::target_dir(), 
-%%                    SrcFiles::src_files(), 
-%%                    Domain::domain()) -> 
+%% @spec gettext_init(TargetDir::target_dir(),
+%%                    SrcFiles::src_files(),
+%%                    Domain::domain()) ->
 %%                            ok | {error, Reason}
 %%
-%% @doc Creates the gettext template file (.pot). 
-%% TargetDir is the path (terminated with /) where the file will be created. 
-%% If TargetDir doesn't exists it will be created. 
-%% SrcFiles is the list of files to be parsed for gettext strings. 
-%% Each gettext string found will be written to the .pot file. 
-%% Domain (when present) is the name of the file to generate. 
+%% @doc Creates the gettext template file (.pot).
+%% TargetDir is the path (terminated with /) where the file will be created.
+%% If TargetDir doesn't exists it will be created.
+%% SrcFiles is the list of files to be parsed for gettext strings.
+%% Each gettext string found will be written to the .pot file.
+%% Domain (when present) is the name of the file to generate.
 %% If no Domain is defined the default name will be messages.pot.
 %% @end
 %%--------------------------------------------------------------------
@@ -73,7 +73,7 @@ gettext_init(TargetDir, SrcFiles, Domain) ->
 %% Internal functions
 %%====================================================================
 %%--------------------------------------------------------------------
-%% @spec write_file(Fd::io_device(), FName::string()) -> 
+%% @spec write_file(Fd::io_device(), FName::string()) ->
 %%                                                 ok | {error, Reason}
 %%
 %% @doc Parses FName for gettext_strings and writes them to Fd file.
@@ -104,10 +104,10 @@ gettext_entry({FName, {Key, LineNo}, Default}) ->
     {ok, C} = sgte:compile("~n#: $fname$:$line_no$~n"
                            "msgid \"$key$\"~n"
                            "msgstr \"$default$\"~n"),
-    Res = sgte:render_str(C, 
-                          [{fname, FName}, 
-                           {line_no, integer_to_list(LineNo)}, 
-                           {key, Key}, 
+    Res = sgte:render_str(C,
+                          [{fname, FName},
+                           {line_no, integer_to_list(LineNo)},
+                           {key, Key},
                            {default, Default}]),
     Res.
 
@@ -123,7 +123,7 @@ po_header() ->
              io_lib:fwrite(
                "~4.4.0w-~2.2.0w-~2.2.0w ~2.2.0w:~2.2.0w:~2.2.0w",
                [Y,Mo,D,H,Mi,S])),
-    Res = 
+    Res =
         "# SOME DESCRIPTIVE TITLE.~n"
         "# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER~n"
         "# This file is distributed under the same license as the PACKAGE package.~n"
@@ -134,7 +134,7 @@ po_header() ->
         "msgstr \"\"~n"
         "\"Project-Id-Version: PACKAGE VERSION\n\"~n"
         "\"Report-Msgid-Bugs-To: \"~n"
-        "\"POT-Creation-Date: " 
+        "\"POT-Creation-Date: "
         ++ lists:sublist(Date, 1, length(Date)-1) ++ "\"~n"
         "\"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\"~n"
         "\"Last-Translator: FULL NAME <EMAIL@ADDRESS>\"~n"

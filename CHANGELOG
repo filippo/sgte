@@ -1,8 +1,8 @@
 0.7
 
 - changed format of compiled templates from string to binaries
-- API changes: 
-  render now returns a deeplist with mixed strings and binaries. 
+- API changes:
+  render now returns a deeplist with mixed strings and binaries.
   Works without problems in yaws
   added render_str to return a string like render worked previously
   added render_bin: returns a list of binaries
@@ -12,11 +12,11 @@
 
 - added nested attribute references for all tokens (eg. foo.bar.baz)
 - added sgte_dict module. Wraps the erlang dict module.
-- API: added rec_to_name_kv/2 Converts a record to a proplist 
-  to be used in the rendering phase. The result is 
+- API: added rec_to_name_kv/2 Converts a record to a proplist
+  to be used in the rendering phase. The result is
   {rec_name, [{field1, val1}, {field2, val2}, ...]}
-- API: added rec_to_kv/2 Converts a record to a proplist 
-  to be used in the rendering phase. The result is 
+- API: added rec_to_kv/2 Converts a record to a proplist
+  to be used in the rendering phase. The result is
   [{field1, val1}, {field2, val2}, ...]
 - switch unit test to eunit
 

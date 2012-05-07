@@ -15,11 +15,11 @@
 %%% srl. Portions created by S.G. Consulting s.r.l. are Copyright (C)
 %%% 2007 S.G. Consulting srl. All Rights Reserved.
 %%%
-%%% @doc 
-%%% <p>Implements a dictionary and a record like data structure. 
+%%% @doc
+%%% <p>Implements a dictionary and a record like data structure.
 %%% Uses the dict module and extends it to support nested dicts.</p>
 %%%
-%%% <p>This module is the interface used to access data in the 
+%%% <p>This module is the interface used to access data in the
 %%% render phase.</p>
 %%% @end
 %%%
@@ -37,10 +37,10 @@
          rfoldl/2,
          rfoldr/2,
          rappend/3,
-         find/2, 
-         store/3, 
-         merge/3, 
-         from_list/1, 
+         find/2,
+         store/3,
+         merge/3,
+         from_list/1,
          rec_to_name_kv/2,
          rec_to_kv/2]).
 
@@ -149,7 +149,7 @@ rec_to_name_kv(RecordTuple, Keys) ->
                     {error, too_much_keys}
             end
     end.
-    
+
 rec_to_kv(RecordTuple, Keys) ->
     [_Name|Values] = tuple_to_list(RecordTuple),
     case length(Values) =:= length(Keys) of

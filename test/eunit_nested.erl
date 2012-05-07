@@ -33,7 +33,7 @@ nested_record_test_() ->
     Res = sgte:render_str(C, [sgte:rec_to_name_kv(Rec, record_info(fields, test_rec))]),
     ResultStr = "foo, bar and baz",
     ?_assert(Res =:= ResultStr).
-    
+
 include_test_() ->
     {ok, C1} = sgte:compile("bar"),
     {ok, C2} = sgte:compile("foo $include tmpl.bar$ baz"),
@@ -44,7 +44,7 @@ include_test_() ->
 apply_test_() ->
     F = fun(L) -> lists:nth(2, L) end,
     {ok, C} = sgte:compile("foo $apply list.second myList$ baz"),
-    Res = sgte:render_str(C, [{list, [{second, F}]}, 
+    Res = sgte:render_str(C, [{list, [{second, F}]},
                           {myList, ["1", "2", "3"]}]),
     ResultStr = "foo 2 baz",
     ?_assert(Res =:= ResultStr).
@@ -81,13 +81,13 @@ if_test_() ->
     {ok, Compiled} = sgte:compile(if_string()),
     NameL = mountainList(),
     Data1 = [{test, [{names, true}]},
-	    {nameList, NameL}],
+            {nameList, NameL}],
     Data2 = [{test, [{names, false}]},
-	    {noName, fun no_name/1}],
+            {noName, fun no_name/1}],
     Res1 = sgte:render_str(Compiled, Data1),
     Res2 = sgte:render_str(Compiled, Data2),
     [?_assert(Res1 =:= "Hello! Some Mountains: Monte Bianco, Cerro Torre, Mt. Everest, Catinaccio Bye Bye."),
-     ?_assert(Res2 =:= "Hello! No Name Found Bye Bye.")].    
+     ?_assert(Res2 =:= "Hello! No Name Found Bye Bye.")].
 
 js_support_test_() ->
     {ok, CF} = sgte:compile("$('someId') and a $nested.attr$ and $('anotherId')"),
@@ -103,22 +103,22 @@ js_support_test_() ->
 %% Template String
 simple_if() ->
     "Start $if test.flag$" ++
-	"then branch" ++
+        "then branch" ++
         "$else$" ++
-	"else branch"++
-	"$end if$".
+        "else branch"++
+        "$end if$".
 
 if_string() ->
     "Hello! $if test.names$" ++
-	"Some Mountains: $join:{, } nameList$" ++
+        "Some Mountains: $join:{, } nameList$" ++
         "$else$" ++
-	"$noName$$end if$" ++ " Bye Bye.".
+        "$noName$$end if$" ++ " Bye Bye.".
 
 nested_if_string() ->
     "$if testNames$" ++
-	"Some Mountains: $if testNames$$join:{, } nameList$$end if$" ++
+        "Some Mountains: $if testNames$$join:{, } nameList$$end if$" ++
         "$else$" ++
-	"$noName$$end if$".
+        "$noName$$end if$".
 
 no_name(_Foo) ->
     "No Name Found".

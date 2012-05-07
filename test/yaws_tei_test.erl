@@ -22,22 +22,22 @@ setup_test() ->
 %%
 test_string() ->
     Str = "This is a test:\n" ++
-	"$testFun()$ followed by $testData$ and unicode characters  àèìòù",
+        "$testFun()$ followed by $testData$ and unicode characters  àèìòù",
     yaws_tei:register_template(test_str, Str, sgte),
     {ok, F} = yaws_tei:lookup(test_str),
     Res = F(data()),
     ResultStr = "This is a test:\n" ++
-	"foo, bar, baz followed by my test data with unicode characters: àèìòù and unicode characters  àèìòù",
+        "foo, bar, baz followed by my test data with unicode characters: àèìòù and unicode characters  àèìòù",
     sgeunit:assert_equal(Res, ResultStr).
 
 test_string_err() ->
     Str = "This is a test:\n" ++
-	"$testFun()$ followed by $testData$ and unicode chars àèìòù",
+        "$testFun()$ followed by $testData$ and unicode chars àèìòù",
     yaws_tei:register_template(test_str, Str, sgte),
     {ok, F} = yaws_tei:lookup(test_str),
     Res = F([]),
     ResultStr = "This is a test:\n" ++
-	"[SGTE Error: template: attribute - key 'testFun()' not found] followed by [SGTE Error: template: attribute - key testData not found] and unicode chars àèìòù",
+        "[SGTE Error: template: attribute - key 'testFun()' not found] followed by [SGTE Error: template: attribute - key testData not found] and unicode chars àèìòù",
     sgeunit:assert_equal(Res, ResultStr).
 
 test_include() ->
@@ -72,21 +72,21 @@ test_if() ->
     {ok, R} = yaws_tei:lookup(if_str),
     NameL = mountainList(),
     Data1 = [{testNames, true},
-	    {nameList, NameL}],
+            {nameList, NameL}],
     Data2 = [{testNames, false},
-	    {noName, fun no_name/1}],
+            {noName, fun no_name/1}],
     Res1 = R(Data1),
     Res2 = R(Data2),
     [sgeunit:assert_equal(Res1, "Hello! Some Mountains: Monte Bianco, Cerro Torre, Mt. Everest, Catinaccio Bye Bye."),
-     sgeunit:assert_equal(Res2, "Hello! No Name Found Bye Bye.")].    
-    
+     sgeunit:assert_equal(Res2, "Hello! No Name Found Bye Bye.")].
+
 test_fif() ->
     yaws_tei:register_template(if_str, if_string(), sgte),
     {ok, R} = yaws_tei:lookup(if_str),
     NameL = mountainList(),
     Data = [{testNames, check_names(NameL)},
-	    {noName, fun no_name/1},
-	    {nameList, NameL}],
+            {noName, fun no_name/1},
+            {nameList, NameL}],
     Res = R(Data),
     sgeunit:assert_equal(Res, "Hello! Some Mountains: Monte Bianco, Cerro Torre, Mt. Everest, Catinaccio Bye Bye.").
 
@@ -138,16 +138,16 @@ test_mmap() ->
     {ok, PrintMList} = yaws_tei:lookup(rowlist),
     {ok, R1} = yaws_tei:lookup(row1),
     {ok, R2} = yaws_tei:lookup(row2),
-    Data = [{nameList, mountains()}, 
-	    {row1, R1}, 
-	    {row2, R2}],
+    Data = [{nameList, mountains()},
+            {row1, R1},
+            {row2, R2}],
     Res = PrintMList(Data),
     Rendered = "<ul>"++
-	"<li class=\"riga1\"><b>Monte Bianco</b></li>"++
-	"<li class=\"riga2\"><b>Cerro Torre</b></li>"++
-	"<li class=\"riga1\"><b>Mt. Everest</b></li>"++
-	"<li class=\"riga2\"><b>Catinaccio</b></li>"++
-	"</ul>",
+        "<li class=\"riga1\"><b>Monte Bianco</b></li>"++
+        "<li class=\"riga2\"><b>Cerro Torre</b></li>"++
+        "<li class=\"riga1\"><b>Mt. Everest</b></li>"++
+        "<li class=\"riga2\"><b>Catinaccio</b></li>"++
+        "</ul>",
     sgeunit:assert_equal(Res, Rendered).
 
 test_imap() ->
@@ -156,11 +156,11 @@ test_imap() ->
     Data = [{nameList, mountains()}, {myClass, "listItem"}],
     Res = PrintMList(Data),
     Rendered = "<ul>"++
-	"<li class=\"listItem\"><b>Monte Bianco</b></li>"++
-	"<li class=\"listItem\"><b>Cerro Torre</b></li>"++
-	"<li class=\"listItem\"><b>Mt. Everest</b></li>"++
-	"<li class=\"listItem\"><b>Catinaccio</b></li>"++
-	"</ul>",
+        "<li class=\"listItem\"><b>Monte Bianco</b></li>"++
+        "<li class=\"listItem\"><b>Cerro Torre</b></li>"++
+        "<li class=\"listItem\"><b>Mt. Everest</b></li>"++
+        "<li class=\"listItem\"><b>Catinaccio</b></li>"++
+        "</ul>",
     sgeunit:assert_equal(Res, Rendered).
 
 test_imap_name_place() ->
@@ -169,11 +169,11 @@ test_imap_name_place() ->
     Data = [{nameList, mountains2()}],
     Res = PrintMList(Data),
     Rendered = "<ul>"++
-	"<li><b>Monte Bianco</b> - Alps</li>"++
-	"<li><b>Cerro Torre</b> - Patagonia</li>"++
-	"<li><b>Mt. Everest</b> - Himalaya</li>"++
-	"<li><b>Catinaccio</b> - Dolomites</li>"++
-	"</ul>",
+        "<li><b>Monte Bianco</b> - Alps</li>"++
+        "<li><b>Cerro Torre</b> - Patagonia</li>"++
+        "<li><b>Mt. Everest</b> - Himalaya</li>"++
+        "<li><b>Catinaccio</b> - Dolomites</li>"++
+        "</ul>",
     sgeunit:assert_equal(Res, Rendered).
 
 test_imap2() ->
@@ -182,19 +182,19 @@ test_imap2() ->
     Data = [{nameList, mountains()}, {myClass, "listItem"},  {myClass2, "listItem2"}],
     Res = PrintMList(Data),
     Rendered = "<ul>\n"++
-	"<li class=\"listItem\"><b>Monte Bianco</b></li>\n"++
-	"<li class=\"listItem2\"><b>Cerro Torre</b></li>\n"++
-	"<li class=\"listItem\"><b>Mt. Everest</b></li>\n"++
-	"<li class=\"listItem2\"><b>Catinaccio</b></li>\n"++
-	"</ul>",
+        "<li class=\"listItem\"><b>Monte Bianco</b></li>\n"++
+        "<li class=\"listItem2\"><b>Cerro Torre</b></li>\n"++
+        "<li class=\"listItem\"><b>Mt. Everest</b></li>\n"++
+        "<li class=\"listItem2\"><b>Catinaccio</b></li>\n"++
+        "</ul>",
     sgeunit:assert_equal(Res, Rendered).
 
 % test callable attribute
 test_fun() ->
     MyF = fun(Data) ->
-		  {ok, V} = dict:find(foo, Data),
-		  "TEST: " ++ V
-	  end,
+                  {ok, V} = dict:find(foo, Data),
+                  "TEST: " ++ V
+          end,
     yaws_tei:register_template(tmpl_fun, tmpl_fun(), sgte),
     {ok, F} = yaws_tei:lookup(tmpl_fun),
     Res = F([{foo, "foooo"}, {callme, MyF}]),
@@ -216,22 +216,22 @@ test_file() ->
 %% Template String
 simple_if() ->
     "Start $if test$" ++
-	"then branch" ++
+        "then branch" ++
         "$else$" ++
-	"else branch"++
-	"$end if$".
+        "else branch"++
+        "$end if$".
 
 if_string() ->
     "Hello! $if testNames$" ++
-	"Some Mountains: $join \", \" nameList$" ++
+        "Some Mountains: $join \", \" nameList$" ++
         "$else$" ++
-	"$noName$$end if$" ++ " Bye Bye.".
+        "$noName$$end if$" ++ " Bye Bye.".
 
 nested_if_string() ->
     "$if testNames$" ++
-	"Some Mountains: $if testNames$$join \", \" nameList$$end if$" ++
+        "Some Mountains: $if testNames$$join \", \" nameList$$end if$" ++
         "$else$" ++
-	"$noName$$end if$".
+        "$noName$$end if$".
 
 no_name(_Foo) ->
     "No Name Found".
@@ -241,22 +241,22 @@ check_names(NameList) ->
 
 print_mountains() ->
     "<ul>" ++
-	"$map printMountain nameList$" ++
+        "$map printMountain nameList$" ++
     "</ul>".
 print_mountain() ->
     "<li><b>$mountain$</b></li>".
 print_inline_mountains() ->
     "<ul>" ++
-	"$map:{<li class=\"$myClass$\"><b>$mountain$</b></li>} nameList$" ++
+        "$map:{<li class=\"$myClass$\"><b>$mountain$</b></li>} nameList$" ++
     "</ul>".
 print_inline_mountains2() ->
     "<ul>\n" ++
-	"$map:{<li class=\"$myClass$\"><b>$mountain$</b></li>,\n"++
-	"<li class=\"$myClass2$\"><b>$mountain$</b></li>\n} nameList$" ++
-	"</ul>".
+        "$map:{<li class=\"$myClass$\"><b>$mountain$</b></li>,\n"++
+        "<li class=\"$myClass2$\"><b>$mountain$</b></li>\n} nameList$" ++
+        "</ul>".
 print_mmap() ->
     "<ul>" ++
-	"$map row1 row2 nameList$" ++
+        "$map row1 row2 nameList$" ++
     "</ul>".
 row1() ->
     "<li class=\"riga1\"><b>$mountain$</b></li>".
@@ -265,7 +265,7 @@ row2() ->
 
 print_inline_mountain_place() ->
     "<ul>" ++
-	"$map:{<li><b>$mountain$</b> - $place$</li>} nameList$" ++
+        "$map:{<li><b>$mountain$</b> - $place$</li>} nameList$" ++
     "</ul>".
 
 tmpl_fun() ->
@@ -284,8 +284,8 @@ mountains() ->
     [{mountain, "Monte Bianco"}, {mountain, "Cerro Torre"}, {mountain, "Mt. Everest"}, {mountain, "Catinaccio"}].
 
 mountains2() ->
-    [[{mountain, "Monte Bianco"}, {place, "Alps"}], 
-     [{mountain, "Cerro Torre"}, {place, "Patagonia"}], 
+    [[{mountain, "Monte Bianco"}, {place, "Alps"}],
+     [{mountain, "Cerro Torre"}, {place, "Patagonia"}],
      [{mountain, "Mt. Everest"}, {place, "Himalaya"}],
      [{mountain, "Catinaccio"}, {place, "Dolomites"}]].
 
